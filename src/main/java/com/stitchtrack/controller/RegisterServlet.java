@@ -32,19 +32,19 @@ public class RegisterServlet extends HttpServlet {
             u.setGender(r.getParameter("gender"));
             String type = r.getParameter("type");
 
-            // Handle file uploads
+            // Handle file uploads to Cloudinary
             Part profilePart = r.getPart("profile_photo");
             Part idCardPart = r.getPart("id_card");
             
             if (profilePart != null && profilePart.getSize() > 0) {
                 String fileName = java.util.UUID.randomUUID().toString() + "_" + getFileName(profilePart);
-                profilePart.write(uploadPath + java.io.File.separator + fileName);
-                u.setProfilePhoto(UPLOAD_DIR + "/" + fileName);
+                String url = com.stitchtrack.util.CloudinaryService.uploadImage(profilePart.getInputStream(), fileName);
+                if (url != null) u.setProfilePhoto(url);
             }
             if (idCardPart != null && idCardPart.getSize() > 0) {
                 String fileName = java.util.UUID.randomUUID().toString() + "_" + getFileName(idCardPart);
-                idCardPart.write(uploadPath + java.io.File.separator + fileName);
-                u.setIdCard(UPLOAD_DIR + "/" + fileName);
+                String url = com.stitchtrack.util.CloudinaryService.uploadImage(idCardPart.getInputStream(), fileName);
+                if (url != null) u.setIdCard(url);
             }
 
             String pw = r.getParameter("password");
