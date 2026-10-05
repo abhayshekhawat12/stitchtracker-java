@@ -17,20 +17,30 @@ public class CloudinaryService {
     private static final Cloudinary cloudinary;
 
     static {
-        // Initialize Cloudinary with environment variables or fallback values.
-        // User should set CLOUDINARY_URL environment variable in production!
-        // Format: cloudinary://my_key:my_secret@my_cloud_name
         String url = System.getenv("CLOUDINARY_URL");
         if (url == null || url.isBlank()) {
+            try {
+                java.util.Properties props = new java.util.Properties();
+                try (InputStream is = CloudinaryService.class.getClassLoader().getResourceAsStream("application.properties")) {
+                    if (is != null) {
+                        props.load(is);
+                        url = props.getProperty("CLOUDINARY_URL");
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Could not load application.properties", e);
+            }
+        }
+        
+        if (url == null || url.isBlank()) {
             logger.warn("CLOUDINARY_URL not set! Image uploads will fail or use fallback. Please configure Cloudinary keys.");
-            // Example fallback (invalid by default, needs actual keys)
             cloudinary = new Cloudinary(ObjectUtils.asMap(
                 "cloud_name", "YOUR_CLOUD_NAME",
                 "api_key", "YOUR_API_KEY",
                 "api_secret", "YOUR_API_SECRET"
             ));
         } else {
-            cloudinary = new Cloudinary(url);
+            cloudinary = new Cloudinary(url.trim());
         }
     }
 
