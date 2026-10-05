@@ -1,0 +1,9 @@
+.git
+.gitignore
+target/
+apache-maven-*/
+apache-tomcat-*/
+database/
+jdk-*/
+logs/
+*.war
