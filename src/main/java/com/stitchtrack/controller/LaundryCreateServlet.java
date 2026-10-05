@@ -1,0 +1,7 @@
+package com.stitchtrack.controller;
+import com.stitchtrack.dao.*;import com.stitchtrack.model.User;import com.stitchtrack.util.ServletUtil;import jakarta.servlet.*;import jakarta.servlet.annotation.WebServlet;import jakarta.servlet.http.*;import java.io.IOException;import java.util.*;
+@WebServlet("/student/new-request") public class LaundryCreateServlet extends HttpServlet{
+ private final LaundryDAO dao=new LaundryDAO();private final SupportDAO support=new SupportDAO();private static final String[] CATS={"T-Shirt","Shirt","Jeans","Trousers","Shorts","Track Pant","Hoodie","Top","Kurti","Lower","Bedsheet","Pillow Cover","Blanket","Towel"};
+ protected void doGet(HttpServletRequest r,HttpServletResponse s)throws ServletException,IOException{r.setAttribute("categories",CATS);r.getRequestDispatcher("/WEB-INF/views/new-request.jsp").forward(r,s);}
+ protected void doPost(HttpServletRequest r,HttpServletResponse s)throws ServletException,IOException{User u=ServletUtil.user(r);Map<String,Integer>items=new LinkedHashMap<>();for(String c:CATS){String key="item_"+c.replace(" ","_");items.put(c,ServletUtil.intParam(r,key));}try{long id=dao.create(u.getId(),items);support.audit(u.getId(),u.getRole(),"Laundry Request","Created laundry request #"+id,r.getRemoteAddr());ServletUtil.flash(r,"success","Laundry request submitted. Staff will assign a bag and generate the pickup QR.");s.sendRedirect(r.getContextPath()+"/student/dashboard");}catch(Exception e){r.setAttribute("error",e.getMessage());doGet(r,s);}}
+}

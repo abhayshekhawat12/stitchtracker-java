@@ -1,0 +1,23 @@
+# Build artifacts
+target/
+*.war
+src/main/webapp/WEB-INF/classes/
+
+# Tooling
+apache-maven-*/
+apache-tomcat-*/
+jdk-*/
+*.zip
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# User Uploads
+src/main/webapp/uploads/
+uploads/
+
+# OS specific
+.DS_Store
+Thumbs.db
