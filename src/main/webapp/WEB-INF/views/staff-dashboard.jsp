@@ -392,6 +392,9 @@
                             <option <%= "Ready for Pickup".equals(o.getCurrentStage()) ? "selected" : "" %>>Ready for Pickup</option>
                         </select>
                         <button type="submit" style="padding:4px 8px;font-size:0.8rem;background:var(--staff-purple);color:white;border:none;border-radius:4px;cursor:pointer;">Update</button>
+                        <% if("Ready for Pickup".equals(o.getCurrentStage())) { %>
+                            <button type="button" onclick="waReady('<%= o.getStudentPhone() %>', '<%= o.getOrderNumber() %>', '<%= o.getStudentName() %>')" style="padding:4px 8px;font-size:0.8rem;background:#25D366;color:white;border:none;border-radius:4px;cursor:pointer;">📲 WA</button>
+                        <% } %>
                     </form>
                 </td>
                 <td style="font-size:0.8rem;color:var(--muted);"><%= o.getCreatedAt() %></td>
@@ -458,10 +461,13 @@
                 </td>
                 <td style="font-size:0.8rem;"><%= o.getCreatedAt() %></td>
                 <td style="font-size:0.8rem;color:var(--ok);font-weight:600;"><%= o.getDeliveredAt() %></td>
+                <td>
+                    <button type="button" onclick="waInvoice('<%= o.getStudentPhone() %>', '<%= o.getOrderNumber() %>', '<%= o.getStudentName() %>', <%= o.getTotalItems() %>)" style="padding:4px 8px;font-size:0.8rem;background:#25D366;color:white;border:none;border-radius:4px;cursor:pointer;">📲 Invoice</button>
+                </td>
             </tr>
             <% } %>
             <% if (!anyDelivered) { %>
-            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">No deliveries yet.</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted);">No deliveries yet.</td></tr>
             <% } %>
             </tbody>
         </table>
@@ -469,5 +475,18 @@
     <% } %>
 
 </main>
+
+<script>
+function waReady(phone, orderId, name) {
+    if(!phone || phone === 'null') { alert("No phone number registered for this student!"); return; }
+    let msg = `Hello ${name},\nYour laundry order *#${orderId}* is now *Ready for Pickup*!\nPlease collect it from the facility.`;
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+function waInvoice(phone, orderId, name, items) {
+    if(!phone || phone === 'null') { alert("No phone number registered for this student!"); return; }
+    let msg = `Hello ${name},\nYour laundry order *#${orderId}* containing *${items} items* has been successfully delivered.\nThank you for using StitchTrack!`;
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+</script>
 </body>
 </html>

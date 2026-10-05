@@ -6,7 +6,7 @@ import java.util.Map;
 
 public class LaundryOrder {
     private long id, studentId;
-    private String orderNumber, studentName, studentRoll, bagNumber, qrToken, qrStatus, status, currentStage;
+    private String orderNumber, studentName, studentRoll, studentPhone, bagNumber, qrToken, qrStatus, status, currentStage;
     private int totalItems;
     private Timestamp createdAt, estimatedCompletion, deliveredAt;
     private final Map<String,Integer> items = new LinkedHashMap<>();
@@ -15,6 +15,7 @@ public class LaundryOrder {
     public String getOrderNumber(){return orderNumber;} public void setOrderNumber(String v){orderNumber=v;}
     public String getStudentName(){return studentName;} public void setStudentName(String v){studentName=v;}
     public String getStudentRoll(){return studentRoll;} public void setStudentRoll(String v){studentRoll=v;}
+    public String getStudentPhone(){return studentPhone;} public void setStudentPhone(String v){studentPhone=v;}
     public String getBagNumber(){return bagNumber;} public void setBagNumber(String v){bagNumber=v;}
     public String getQrToken(){return qrToken;} public void setQrToken(String v){qrToken=v;}
     public String getQrStatus(){return qrStatus;} public void setQrStatus(String v){qrStatus=v;}

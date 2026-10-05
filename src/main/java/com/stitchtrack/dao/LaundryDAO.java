@@ -6,7 +6,7 @@ import java.sql.*;
 import java.util.*;
 
 public class LaundryDAO {
-    private static final String SELECT="SELECT o.*,u.name student_name,u.roll_number student_roll FROM laundry_orders o JOIN users u ON u.id=o.student_id";
+    private static final String SELECT="SELECT o.*,u.name student_name,u.roll_number student_roll,u.phone student_phone FROM laundry_orders o JOIN users u ON u.id=o.student_id";
 
     public long create(long studentId, Map<String,Integer> items) throws SQLException {
         int total=items.values().stream().mapToInt(Integer::intValue).sum();
@@ -71,5 +71,5 @@ public class LaundryDAO {
         try(Connection c=DBConnection.getConnection();PreparedStatement p=c.prepareStatement(sql)){for(int i=0;i<params.length;i++)p.setObject(i+1,params[i]);try(ResultSet r=p.executeQuery()){while(r.next()){LaundryOrder o=map(r);loadItems(c,o);list.add(o);}}}return list;
     }
     private void loadItems(Connection c,LaundryOrder o)throws SQLException{try(PreparedStatement p=c.prepareStatement("SELECT category,item_count FROM laundry_items WHERE order_id=? ORDER BY category")){p.setLong(1,o.getId());try(ResultSet r=p.executeQuery()){while(r.next())o.getItems().put(r.getString(1),r.getInt(2));}}}
-    private LaundryOrder map(ResultSet r)throws SQLException{LaundryOrder o=new LaundryOrder();o.setId(r.getLong("id"));o.setStudentId(r.getLong("student_id"));o.setOrderNumber(r.getString("order_number"));o.setStudentName(r.getString("student_name"));o.setStudentRoll(r.getString("student_roll"));o.setBagNumber(r.getString("bag_number"));o.setQrToken(r.getString("qr_token"));o.setQrStatus(r.getString("qr_status"));o.setStatus(r.getString("status"));o.setCurrentStage(r.getString("current_stage"));o.setTotalItems(r.getInt("total_items"));o.setCreatedAt(r.getTimestamp("created_at"));o.setEstimatedCompletion(r.getTimestamp("estimated_completion"));o.setDeliveredAt(r.getTimestamp("delivered_at"));return o;}
+    private LaundryOrder map(ResultSet r)throws SQLException{LaundryOrder o=new LaundryOrder();o.setId(r.getLong("id"));o.setStudentId(r.getLong("student_id"));o.setOrderNumber(r.getString("order_number"));o.setStudentName(r.getString("student_name"));o.setStudentRoll(r.getString("student_roll"));o.setStudentPhone(r.getString("student_phone"));o.setBagNumber(r.getString("bag_number"));o.setQrToken(r.getString("qr_token"));o.setQrStatus(r.getString("qr_status"));o.setStatus(r.getString("status"));o.setCurrentStage(r.getString("current_stage"));o.setTotalItems(r.getInt("total_items"));o.setCreatedAt(r.getTimestamp("created_at"));o.setEstimatedCompletion(r.getTimestamp("estimated_completion"));o.setDeliveredAt(r.getTimestamp("delivered_at"));return o;}
 }
