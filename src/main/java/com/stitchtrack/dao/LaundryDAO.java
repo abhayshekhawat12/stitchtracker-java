@@ -29,7 +29,7 @@ public class LaundryDAO {
     public LaundryOrder findById(long id) throws SQLException {List<LaundryOrder> x=query(SELECT+" WHERE o.id=?",id);return x.isEmpty()?null:x.get(0);}
 
     public void accept(long orderId,long staffId,String bagNumber,String qrToken) throws SQLException {
-        if(!bagNumber.matches("ST-\\d{3,4}")) throw new SQLException("Bag number must match ST-101 or ST-4920 format.");
+        if(!bagNumber.matches("\\d+")) throw new SQLException("Bag number must be numeric (e.g. 1, 2, 101).");
         try(Connection c=DBConnection.getConnection()){
             try(PreparedStatement chk=c.prepareStatement("SELECT COUNT(*) FROM laundry_orders WHERE UPPER(bag_number)=UPPER(?) AND status NOT IN ('Delivered','Cancelled','Rejected')")){chk.setString(1,bagNumber);try(ResultSet r=chk.executeQuery()){r.next();if(r.getInt(1)>0)throw new SQLException("This bag is already in use.");}}
             try(PreparedStatement p=c.prepareStatement("UPDATE laundry_orders SET bag_number=?,qr_token=?,qr_status='unused',status='Received',current_stage='Received',accepted_by=?,accepted_at=NOW(),estimated_completion=DATE_ADD(NOW(),INTERVAL 2 DAY) WHERE id=? AND status='Pending Approval'")){p.setString(1,bagNumber.toUpperCase());p.setString(2,qrToken);p.setLong(3,staffId);p.setLong(4,orderId);if(p.executeUpdate()==0)throw new SQLException("Order is no longer pending approval.");}
