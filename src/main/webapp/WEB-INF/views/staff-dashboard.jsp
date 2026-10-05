@@ -479,13 +479,13 @@
 <script>
 function waReady(phone, orderId, name) {
     if(!phone || phone === 'null') { alert("No phone number registered for this student!"); return; }
-    let msg = `Hello ${name},\nYour laundry order *#${orderId}* is now *Ready for Pickup*!\nPlease collect it from the facility.`;
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    let msg = `Hello \${name},\nYour laundry order *#\${orderId}* is now *Ready for Pickup*!\nPlease collect it from the facility.`;
+    window.open(`https://wa.me/91\${phone}?text=\${encodeURIComponent(msg)}`, '_blank');
 }
 function waInvoice(phone, orderId, name, items) {
     if(!phone || phone === 'null') { alert("No phone number registered for this student!"); return; }
-    let msg = `Hello ${name},\nYour laundry order *#${orderId}* containing *${items} items* has been successfully delivered.\nThank you for using StitchTrack!`;
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    let msg = `Hello \${name},\nYour laundry order *#\${orderId}* containing *\${items} items* has been successfully delivered.\nThank you for using StitchTrack!`;
+    window.open(`https://wa.me/91\${phone}?text=\${encodeURIComponent(msg)}`, '_blank');
 }
 </script>
 </body>
