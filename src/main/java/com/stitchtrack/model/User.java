@@ -36,4 +36,22 @@ public class User {
     public boolean isAdmin(){return "ADMIN".equalsIgnoreCase(role);}
     public boolean isStaff(){return "STAFF".equalsIgnoreCase(role);}
     public boolean isStudent(){return "STUDENT".equalsIgnoreCase(role);}
+
+    public String getResolvedProfilePhoto(String contextPath) {
+        if (profilePhoto == null || profilePhoto.isBlank()) return null;
+        if (profilePhoto.startsWith("http://") || profilePhoto.startsWith("https://")) {
+            return profilePhoto;
+        }
+        String clean = profilePhoto.startsWith("/") ? profilePhoto.substring(1) : profilePhoto;
+        return (contextPath == null || contextPath.isEmpty()) ? ("/" + clean) : (contextPath + "/" + clean);
+    }
+
+    public String getResolvedIdCard(String contextPath) {
+        if (idCard == null || idCard.isBlank()) return null;
+        if (idCard.startsWith("http://") || idCard.startsWith("https://")) {
+            return idCard;
+        }
+        String clean = idCard.startsWith("/") ? idCard.substring(1) : idCard;
+        return (contextPath == null || contextPath.isEmpty()) ? ("/" + clean) : (contextPath + "/" + clean);
+    }
 }

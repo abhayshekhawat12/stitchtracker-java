@@ -149,15 +149,21 @@ if(tab == null) tab = "overview";
                             <% for(User st : pendingStudentsList){ %>
                             <tr>
                                 <td>
-                                    <% if(st.getProfilePhoto()!=null && !st.getProfilePhoto().isBlank()){ %>
-                                        <img src="${pageContext.request.contextPath}/<%=st.getProfilePhoto()%>" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                    <% 
+                                        String photoUrl = st.getResolvedProfilePhoto(request.getContextPath());
+                                        String idCardUrl = st.getResolvedIdCard(request.getContextPath());
+                                    %>
+                                    <% if(photoUrl != null){ %>
+                                        <a href="<%=photoUrl%>" target="_blank" title="Click to view full photo">
+                                            <img src="<%=photoUrl%>" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                        </a>
                                     <% } else { %>
                                         <div style="width:38px;height:38px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.9rem;">
                                             <%= st.getName()!=null && !st.getName().isEmpty() ? st.getName().substring(0,1).toUpperCase() : "S" %>
                                         </div>
                                     <% } %>
-                                    <% if(st.getIdCard()!=null && !st.getIdCard().isBlank()){ %>
-                                        <br><a href="${pageContext.request.contextPath}/<%=st.getIdCard()%>" target="_blank" style="font-size:0.72rem;color:var(--blue);text-decoration:underline;">View ID</a>
+                                    <% if(idCardUrl != null){ %>
+                                        <br><a href="<%=idCardUrl%>" target="_blank" style="font-size:0.75rem;color:var(--blue);font-weight:600;text-decoration:underline;">👁 View ID</a>
                                     <% } %>
                                 </td>
                                 <td><strong><%=st.getName()%></strong></td>
@@ -320,15 +326,21 @@ if(tab == null) tab = "overview";
                             <% for(User st : pendingStudentsList){ %>
                             <tr>
                                 <td>
-                                    <% if(st.getProfilePhoto()!=null && !st.getProfilePhoto().isBlank()){ %>
-                                        <img src="${pageContext.request.contextPath}/<%=st.getProfilePhoto()%>" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                    <% 
+                                        String photoUrl = st.getResolvedProfilePhoto(request.getContextPath());
+                                        String idCardUrl = st.getResolvedIdCard(request.getContextPath());
+                                    %>
+                                    <% if(photoUrl != null){ %>
+                                        <a href="<%=photoUrl%>" target="_blank" title="Click to view full photo">
+                                            <img src="<%=photoUrl%>" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                        </a>
                                     <% } else { %>
                                         <div style="width:38px;height:38px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.9rem;">
                                             <%= st.getName()!=null && !st.getName().isEmpty() ? st.getName().substring(0,1).toUpperCase() : "S" %>
                                         </div>
                                     <% } %>
-                                    <% if(st.getIdCard()!=null && !st.getIdCard().isBlank()){ %>
-                                        <br><a href="${pageContext.request.contextPath}/<%=st.getIdCard()%>" target="_blank" style="font-size:0.72rem;color:var(--blue);text-decoration:underline;">View ID</a>
+                                    <% if(idCardUrl != null){ %>
+                                        <br><a href="<%=idCardUrl%>" target="_blank" style="font-size:0.75rem;color:var(--blue);font-weight:600;text-decoration:underline;">👁 View ID</a>
                                     <% } %>
                                 </td>
                                 <td><strong><%=st.getName()%></strong></td>
@@ -483,11 +495,17 @@ if(tab == null) tab = "overview";
                     <%for(User st:students){%>
                     <tr>
                         <td>
-                            <% if(st.getProfilePhoto()!=null){ %>
-                                <img src="${pageContext.request.contextPath}/<%=st.getProfilePhoto()%>" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                            <% 
+                                String photoUrl = st.getResolvedProfilePhoto(request.getContextPath());
+                                String idCardUrl = st.getResolvedIdCard(request.getContextPath());
+                            %>
+                            <% if(photoUrl != null){ %>
+                                <a href="<%=photoUrl%>" target="_blank" title="Click to view full photo">
+                                    <img src="<%=photoUrl%>" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                </a>
                             <% } %>
-                            <% if(st.getIdCard()!=null){ %>
-                                <br><a href="${pageContext.request.contextPath}/<%=st.getIdCard()%>" target="_blank" style="font-size:0.7rem;">View ID</a>
+                            <% if(idCardUrl != null){ %>
+                                <br><a href="<%=idCardUrl%>" target="_blank" style="font-size:0.75rem;color:var(--blue);font-weight:600;text-decoration:underline;">👁 View ID</a>
                             <% } %>
                         </td>
                         <td><%=st.getName()%><small><%=st.getEmail()%></small></td>
@@ -531,11 +549,17 @@ if(tab == null) tab = "overview";
                     <%if(staffList!=null) for(User st:staffList){%>
                     <tr>
                         <td>
-                            <% if(st.getProfilePhoto()!=null){ %>
-                                <img src="${pageContext.request.contextPath}/<%=st.getProfilePhoto()%>" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                            <% 
+                                String photoUrl = st.getResolvedProfilePhoto(request.getContextPath());
+                                String idCardUrl = st.getResolvedIdCard(request.getContextPath());
+                            %>
+                            <% if(photoUrl != null){ %>
+                                <a href="<%=photoUrl%>" target="_blank" title="Click to view full photo">
+                                    <img src="<%=photoUrl%>" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                </a>
                             <% } %>
-                            <% if(st.getIdCard()!=null){ %>
-                                <br><a href="${pageContext.request.contextPath}/<%=st.getIdCard()%>" target="_blank" style="font-size:0.7rem;">View ID</a>
+                            <% if(idCardUrl != null){ %>
+                                <br><a href="<%=idCardUrl%>" target="_blank" style="font-size:0.75rem;color:var(--blue);font-weight:600;text-decoration:underline;">👁 View ID</a>
                             <% } %>
                         </td>
                         <td><%=st.getName()%><small><%=st.getEmail()%></small></td>
