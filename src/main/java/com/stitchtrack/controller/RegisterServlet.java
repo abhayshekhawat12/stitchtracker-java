@@ -18,9 +18,9 @@ public class RegisterServlet extends HttpServlet {
     protected void doPost(HttpServletRequest r, HttpServletResponse s) throws ServletException, IOException {
         try {
             String appPath = r.getServletContext().getRealPath("");
-            String uploadPath = appPath + java.io.File.separator + UPLOAD_DIR;
+            String uploadPath = (appPath != null ? appPath : System.getProperty("java.io.tmpdir")) + java.io.File.separator + UPLOAD_DIR;
             java.io.File uploadDir = new java.io.File(uploadPath);
-            if (!uploadDir.exists()) uploadDir.mkdir();
+            if (!uploadDir.exists()) uploadDir.mkdirs();
 
             User u = new User();
             u.setName(r.getParameter("name"));
