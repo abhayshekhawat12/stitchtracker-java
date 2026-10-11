@@ -573,7 +573,18 @@
 
     <!-- Try another scan link if result shown -->
     <% if (order != null) { %>
-    <div style="text-align:center;margin-top:24px;">
+    <div style="display:flex;justify-content:center;gap:12px;margin-top:24px;flex-wrap:wrap;">
+        <% if ("Ready for Pickup".equals(order.getCurrentStage()) || "Ready".equals(order.getStatus())) { %>
+            <a href="<%= order.getWhatsAppReadyUrl() %>" target="_blank" rel="noopener noreferrer"
+               style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;font-size:0.95rem;font-weight:700;background:#25D366;color:white;border-radius:var(--radius-md);text-decoration:none;box-shadow:0 4px 12px rgba(37,211,102,0.35);">
+                💬 WhatsApp Pickup Alert
+            </a>
+        <% } else if ("Delivered".equals(order.getStatus())) { %>
+            <a href="<%= order.getWhatsAppDeliveredUrl() %>" target="_blank" rel="noopener noreferrer"
+               style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;font-size:0.95rem;font-weight:700;background:#25D366;color:white;border-radius:var(--radius-md);text-decoration:none;box-shadow:0 4px 12px rgba(37,211,102,0.35);">
+                💬 WhatsApp Delivery Invoice
+            </a>
+        <% } %>
         <a href="${pageContext.request.contextPath}/staff/scanner"
            class="button secondary" style="padding:12px 28px;font-weight:700;">
             🔄 Scan Another QR

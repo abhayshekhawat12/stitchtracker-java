@@ -457,7 +457,7 @@ if(tab == null) tab = "overview";
             <div class="section-head"><h3>Active Pipeline</h3></div>
             <div class="table-wrap">
                 <table>
-                    <tr><th>Order / Bag</th><th>Student</th><th>Status</th><th>Stage</th><th>Update</th></tr>
+                    <tr><th>Order / Bag</th><th>Student</th><th>Status</th><th>Stage</th><th>Update &amp; Alert</th></tr>
                     <%for(LaundryOrder o:orders)if(!Set.of("Pending Approval","Delivered","Rejected","Cancelled").contains(o.getStatus())){%>
                     <tr>
                         <td><%=o.getOrderNumber()%><small>Bag <%=o.getBagNumber()%></small></td>
@@ -465,19 +465,29 @@ if(tab == null) tab = "overview";
                         <td><span class="pill"><%=o.getStatus()%></span></td>
                         <td><%=o.getCurrentStage()%></td>
                         <td>
-                            <form method="post" action="${pageContext.request.contextPath}/admin/action" class="inline">
-                                <input type="hidden" name="action" value="stage">
-                                <input type="hidden" name="orderId" value="<%=o.getId()%>">
-                                <select name="stage">
-                                    <option>Received</option>
-                                    <option>Sorting</option>
-                                    <option>Washing</option>
-                                    <option>Drying</option>
-                                    <option>Ironing</option>
-                                    <option>Ready for Pickup</option>
-                                </select>
-                                <button class="secondary small">Update</button>
-                            </form>
+                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                <form method="post" action="${pageContext.request.contextPath}/admin/action" class="inline" style="display:flex;gap:5px;align-items:center;margin:0;">
+                                    <input type="hidden" name="action" value="stage">
+                                    <input type="hidden" name="orderId" value="<%=o.getId()%>">
+                                    <input type="hidden" name="tab" value="pipeline">
+                                    <select name="stage" style="padding:4px;font-size:0.8rem;border:1px solid var(--line);border-radius:4px;">
+                                        <option <%= "Received".equals(o.getCurrentStage()) ? "selected" : "" %>>Received</option>
+                                        <option <%= "Sorting".equals(o.getCurrentStage()) ? "selected" : "" %>>Sorting</option>
+                                        <option <%= "Washing".equals(o.getCurrentStage()) ? "selected" : "" %>>Washing</option>
+                                        <option <%= "Drying".equals(o.getCurrentStage()) ? "selected" : "" %>>Drying</option>
+                                        <option <%= "Ironing".equals(o.getCurrentStage()) ? "selected" : "" %>>Ironing</option>
+                                        <option <%= "Ready for Pickup".equals(o.getCurrentStage()) ? "selected" : "" %>>Ready for Pickup</option>
+                                    </select>
+                                    <button class="secondary small">Update</button>
+                                </form>
+                                <% if("Ready for Pickup".equals(o.getCurrentStage())) { %>
+                                    <a href="<%= o.getWhatsAppReadyUrl() %>" target="_blank" rel="noopener noreferrer"
+                                       title="Send WhatsApp Ready for Pickup alert to <%= o.getStudentName() %>"
+                                       style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;font-size:0.8rem;font-weight:700;background:#25D366;color:white;border-radius:4px;text-decoration:none;box-shadow:0 1px 4px rgba(37,211,102,0.4);white-space:nowrap;">
+                                        💬 WhatsApp Ready
+                                    </a>
+                                <% } %>
+                            </div>
                         </td>
                     </tr>
                     <%}%>
@@ -663,7 +673,7 @@ if(tab == null) tab = "overview";
             </div>
             <div class="table-wrap">
                 <table id="histTable">
-                    <tr><th>Order / Bag</th><th>Student</th><th>Items</th><th>Status</th><th>Stage</th><th>Date</th></tr>
+                    <tr><th>Order / Bag</th><th>Student</th><th>Items</th><th>Status</th><th>Stage</th><th>Date</th><th>Action</th></tr>
                     <%for(LaundryOrder o:orders){%>
                     <tr class="hist-row">
                         <td>
@@ -680,6 +690,23 @@ if(tab == null) tab = "overview";
                         </td>
                         <td><%=o.getCurrentStage()%></td>
                         <td><small><%=o.getCreatedAt()%></small></td>
+                        <td>
+                            <% if("Ready for Pickup".equals(o.getCurrentStage())) { %>
+                                <a href="<%= o.getWhatsAppReadyUrl() %>" target="_blank" rel="noopener noreferrer"
+                                   title="Send WhatsApp Ready for Pickup alert to <%= o.getStudentName() %>"
+                                   style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:0.75rem;font-weight:700;background:#25D366;color:white;border-radius:4px;text-decoration:none;box-shadow:0 1px 4px rgba(37,211,102,0.4);white-space:nowrap;">
+                                    💬 WA Ready
+                                </a>
+                            <% } else if("Delivered".equals(o.getStatus())) { %>
+                                <a href="<%= o.getWhatsAppDeliveredUrl() %>" target="_blank" rel="noopener noreferrer"
+                                   title="Send WhatsApp Delivery Invoice to <%= o.getStudentName() %>"
+                                   style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:0.75rem;font-weight:700;background:#25D366;color:white;border-radius:4px;text-decoration:none;box-shadow:0 1px 4px rgba(37,211,102,0.4);white-space:nowrap;">
+                                    💬 Invoice WA
+                                </a>
+                            <% } else { %>
+                                <span style="color:var(--muted);">&mdash;</span>
+                            <% } %>
+                        </td>
                     </tr>
                     <%}%>
                 </table>

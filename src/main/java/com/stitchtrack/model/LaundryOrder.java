@@ -31,4 +31,77 @@ public class LaundryOrder {
         String s=status.trim().toUpperCase();
         return s.equals("PENDING APPROVAL") || s.equals("PENDING");
     }
+
+    public String getCleanPhone() {
+        if (studentPhone == null) return "";
+        String p = studentPhone.replaceAll("[^0-9]", "");
+        if (p.startsWith("0")) {
+            p = p.replaceFirst("^0+", "");
+        }
+        if (p.length() == 10) {
+            p = "91" + p;
+        }
+        return p;
+    }
+
+    public String getWhatsAppReadyMessage() {
+        String name = (studentName != null && !studentName.isBlank()) ? studentName : "Student";
+        String ord = (orderNumber != null && !orderNumber.isBlank()) ? orderNumber : ("#" + id);
+        StringBuilder sb = new StringBuilder();
+        sb.append("🧺 *StitchTrack Laundry Notification* 🧺\n\n");
+        sb.append("Hello *").append(name).append("*, 👋\n\n");
+        sb.append("Great news! Your laundry order is washed, ironed & *READY FOR PICKUP*! ✅\n\n");
+        sb.append("📋 *Order Details:*\n");
+        sb.append("• *Order ID:* ").append(ord).append("\n");
+        if (bagNumber != null && !bagNumber.isBlank()) {
+            sb.append("• *Bag Number:* ").append(bagNumber).append("\n");
+        }
+        if (totalItems > 0) {
+            sb.append("• *Total Items:* ").append(totalItems).append(" garments\n");
+        }
+        sb.append("• *Status:* Ready for Pickup\n\n");
+        sb.append("📍 *Pickup Instructions:*\n");
+        sb.append("Please visit the laundry counter and show your *Pickup QR Code* from your StitchTrack dashboard to collect your clothes.\n\n");
+        sb.append("Thank you!\nStitchTrack Facility Team");
+        return sb.toString();
+    }
+
+    public String getWhatsAppReadyUrl() {
+        String phone = getCleanPhone();
+        String msg = getWhatsAppReadyMessage();
+        String encoded = java.net.URLEncoder.encode(msg, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+        if (!phone.isBlank()) {
+            return "https://api.whatsapp.com/send?phone=" + phone + "&text=" + encoded;
+        } else {
+            return "https://api.whatsapp.com/send?text=" + encoded;
+        }
+    }
+
+    public String getWhatsAppDeliveredMessage() {
+        String name = (studentName != null && !studentName.isBlank()) ? studentName : "Student";
+        String ord = (orderNumber != null && !orderNumber.isBlank()) ? orderNumber : ("#" + id);
+        StringBuilder sb = new StringBuilder();
+        sb.append("🧺 *StitchTrack Laundry - Delivery Invoice* 🧺\n\n");
+        sb.append("Hello *").append(name).append("*, 👋\n\n");
+        sb.append("Your laundry order *").append(ord).append("* has been *SUCCESSFULLY DELIVERED*! ✅\n\n");
+        if (totalItems > 0) {
+            sb.append("• *Total Items:* ").append(totalItems).append(" garments\n");
+        }
+        if (bagNumber != null && !bagNumber.isBlank()) {
+            sb.append("• *Bag Number:* ").append(bagNumber).append("\n");
+        }
+        sb.append("\nThank you for choosing StitchTrack! Have a great day.");
+        return sb.toString();
+    }
+
+    public String getWhatsAppDeliveredUrl() {
+        String phone = getCleanPhone();
+        String msg = getWhatsAppDeliveredMessage();
+        String encoded = java.net.URLEncoder.encode(msg, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+        if (!phone.isBlank()) {
+            return "https://api.whatsapp.com/send?phone=" + phone + "&text=" + encoded;
+        } else {
+            return "https://api.whatsapp.com/send?text=" + encoded;
+        }
+    }
 }

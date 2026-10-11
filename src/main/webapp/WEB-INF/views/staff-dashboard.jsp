@@ -380,22 +380,28 @@
                 </td>
                 <td><strong><%= o.getTotalItems() %></strong></td>
                 <td>
-                    <form method="post" action="${pageContext.request.contextPath}/staff/action" style="display:flex;gap:5px;align-items:center;">
-                        <input type="hidden" name="action" value="stage">
-                        <input type="hidden" name="orderId" value="<%= o.getId() %>">
-                        <select name="stage" style="padding:4px;font-size:0.8rem;border:1px solid #ccc;border-radius:4px;">
-                            <option <%= "Received".equals(o.getCurrentStage()) ? "selected" : "" %>>Received</option>
-                            <option <%= "Sorting".equals(o.getCurrentStage()) ? "selected" : "" %>>Sorting</option>
-                            <option <%= "Washing".equals(o.getCurrentStage()) ? "selected" : "" %>>Washing</option>
-                            <option <%= "Drying".equals(o.getCurrentStage()) ? "selected" : "" %>>Drying</option>
-                            <option <%= "Ironing".equals(o.getCurrentStage()) ? "selected" : "" %>>Ironing</option>
-                            <option <%= "Ready for Pickup".equals(o.getCurrentStage()) ? "selected" : "" %>>Ready for Pickup</option>
-                        </select>
-                        <button type="submit" style="padding:4px 8px;font-size:0.8rem;background:var(--staff-purple);color:white;border:none;border-radius:4px;cursor:pointer;">Update</button>
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <form method="post" action="${pageContext.request.contextPath}/staff/action" style="display:flex;gap:5px;align-items:center;margin:0;">
+                            <input type="hidden" name="action" value="stage">
+                            <input type="hidden" name="orderId" value="<%= o.getId() %>">
+                            <select name="stage" style="padding:4px;font-size:0.8rem;border:1px solid #ccc;border-radius:4px;">
+                                <option <%= "Received".equals(o.getCurrentStage()) ? "selected" : "" %>>Received</option>
+                                <option <%= "Sorting".equals(o.getCurrentStage()) ? "selected" : "" %>>Sorting</option>
+                                <option <%= "Washing".equals(o.getCurrentStage()) ? "selected" : "" %>>Washing</option>
+                                <option <%= "Drying".equals(o.getCurrentStage()) ? "selected" : "" %>>Drying</option>
+                                <option <%= "Ironing".equals(o.getCurrentStage()) ? "selected" : "" %>>Ironing</option>
+                                <option <%= "Ready for Pickup".equals(o.getCurrentStage()) ? "selected" : "" %>>Ready for Pickup</option>
+                            </select>
+                            <button type="submit" style="padding:4px 8px;font-size:0.8rem;background:var(--staff-purple);color:white;border:none;border-radius:4px;cursor:pointer;">Update</button>
+                        </form>
                         <% if("Ready for Pickup".equals(o.getCurrentStage())) { %>
-                            <button type="button" onclick="waReady('<%= o.getStudentPhone() %>', '<%= o.getOrderNumber() %>', '<%= o.getStudentName() %>')" style="padding:4px 8px;font-size:0.8rem;background:#25D366;color:white;border:none;border-radius:4px;cursor:pointer;">📲 WA</button>
+                            <a href="<%= o.getWhatsAppReadyUrl() %>" target="_blank" rel="noopener noreferrer"
+                               title="Send WhatsApp Ready for Pickup alert to <%= o.getStudentName() %>"
+                               style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;font-size:0.8rem;font-weight:700;background:#25D366;color:white;border-radius:4px;text-decoration:none;box-shadow:0 1px 4px rgba(37,211,102,0.4);white-space:nowrap;">
+                                💬 WhatsApp Ready
+                            </a>
                         <% } %>
-                    </form>
+                    </div>
                 </td>
                 <td style="font-size:0.8rem;color:var(--muted);"><%= o.getCreatedAt() %></td>
             </tr>
@@ -462,7 +468,11 @@
                 <td style="font-size:0.8rem;"><%= o.getCreatedAt() %></td>
                 <td style="font-size:0.8rem;color:var(--ok);font-weight:600;"><%= o.getDeliveredAt() %></td>
                 <td>
-                    <button type="button" onclick="waInvoice('<%= o.getStudentPhone() %>', '<%= o.getOrderNumber() %>', '<%= o.getStudentName() %>', <%= o.getTotalItems() %>)" style="padding:4px 8px;font-size:0.8rem;background:#25D366;color:white;border:none;border-radius:4px;cursor:pointer;">📲 Invoice</button>
+                    <a href="<%= o.getWhatsAppDeliveredUrl() %>" target="_blank" rel="noopener noreferrer"
+                       title="Send WhatsApp Delivery Invoice to <%= o.getStudentName() %>"
+                       style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;font-size:0.8rem;font-weight:700;background:#25D366;color:white;border-radius:4px;text-decoration:none;box-shadow:0 1px 4px rgba(37,211,102,0.4);white-space:nowrap;">
+                        💬 Invoice WA
+                    </a>
                 </td>
             </tr>
             <% } %>
@@ -478,14 +488,20 @@
 
 <script>
 function waReady(phone, orderId, name) {
-    if(!phone || phone === 'null') { alert("No phone number registered for this student!"); return; }
-    let msg = `Hello \${name},\nYour laundry order *#\${orderId}* is now *Ready for Pickup*!\nPlease collect it from the facility.`;
-    window.open(`https://wa.me/91\${phone}?text=\${encodeURIComponent(msg)}`, '_blank');
+    var p = (phone || '').replace(/[^0-9]/g, '');
+    if (p.startsWith('0')) p = p.replace(/^0+/, '');
+    if (p.length === 10) p = '91' + p;
+    var msg = 'Hello ' + (name || 'Student') + ',\nYour laundry order *#' + (orderId || '') + '* is now *Ready for Pickup*! \u2705\nPlease collect it from the facility counter with your QR Code.';
+    var url = p ? ('https://api.whatsapp.com/send?phone=' + p + '&text=' + encodeURIComponent(msg)) : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg));
+    window.open(url, '_blank');
 }
 function waInvoice(phone, orderId, name, items) {
-    if(!phone || phone === 'null') { alert("No phone number registered for this student!"); return; }
-    let msg = `Hello \${name},\nYour laundry order *#\${orderId}* containing *\${items} items* has been successfully delivered.\nThank you for using StitchTrack!`;
-    window.open(`https://wa.me/91\${phone}?text=\${encodeURIComponent(msg)}`, '_blank');
+    var p = (phone || '').replace(/[^0-9]/g, '');
+    if (p.startsWith('0')) p = p.replace(/^0+/, '');
+    if (p.length === 10) p = '91' + p;
+    var msg = 'Hello ' + (name || 'Student') + ',\nYour laundry order *#' + (orderId || '') + '* containing *' + (items || 0) + ' items* has been successfully delivered.\nThank you for choosing StitchTrack!';
+    var url = p ? ('https://api.whatsapp.com/send?phone=' + p + '&text=' + encodeURIComponent(msg)) : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg));
+    window.open(url, '_blank');
 }
 </script>
 </body>

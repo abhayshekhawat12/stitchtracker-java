@@ -55,7 +55,11 @@ public class StaffActionServlet extends HttpServlet {
                     laundry.updateStage(orderId, stage);
                     support.audit(staff.getId(), staff.getRole(), "Staff Update Stage",
                             "Updated order #" + orderId + " to " + stage, r.getRemoteAddr());
-                    ServletUtil.flash(r, "success", "Stage updated to " + stage);
+                    if ("Ready for Pickup".equalsIgnoreCase(stage)) {
+                        ServletUtil.flash(r, "success", "✅ Order #" + orderId + " marked as Ready for Pickup! Click the WhatsApp button to alert the student.");
+                    } else {
+                        ServletUtil.flash(r, "success", "Stage updated to " + stage);
+                    }
                 }
                 default -> throw new IllegalArgumentException("Unknown action: " + action);
             }

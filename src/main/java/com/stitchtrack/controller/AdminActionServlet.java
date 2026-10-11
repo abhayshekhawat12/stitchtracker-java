@@ -41,13 +41,24 @@ public class AdminActionServlet extends HttpServlet {
                         laundry.reject(id);
                     }
                 }
-                case "stage" -> laundry.updateStage(ServletUtil.longParam(r, "orderId"), r.getParameter("stage"));
+                case "stage" -> {
+                    long orderId = ServletUtil.longParam(r, "orderId");
+                    String stage = r.getParameter("stage");
+                    laundry.updateStage(orderId, stage);
+                    if ("Ready for Pickup".equalsIgnoreCase(stage)) {
+                        ServletUtil.flash(r, "success", "✅ Order #" + orderId + " updated to Ready for Pickup! Click the WhatsApp button to alert student.");
+                    } else {
+                        ServletUtil.flash(r, "success", "Stage updated to " + stage);
+                    }
+                }
                 case "renewal" -> support.resolveRenewal(ServletUtil.longParam(r, "requestId"), Boolean.parseBoolean(r.getParameter("approve")), r.getParameter("notes"));
                 case "complaint" -> support.resolveComplaint(ServletUtil.longParam(r, "complaintId"), r.getParameter("notes"));
                 default -> throw new IllegalArgumentException("Unknown action: " + a);
             }
             support.audit(admin.getId(), admin.getRole(), "Admin Action", a, r.getRemoteAddr());
-            ServletUtil.flash(r, "success", "Action completed successfully.");
+            if (r.getSession().getAttribute("flash") == null) {
+                ServletUtil.flash(r, "success", "Action completed successfully.");
+            }
         } catch (Exception e) {
             ServletUtil.flash(r, "error", e.getMessage());
         }
