@@ -28,5 +28,10 @@ public class User {
     public String getRole(){return role;} public void setRole(String v){role=v;}
     public String getProfilePhoto(){return profilePhoto;} public void setProfilePhoto(String v){profilePhoto=v;}
     public String getIdCard(){return idCard;} public void setIdCard(String v){idCard=v;}
+    private java.sql.Timestamp createdAt;
+    public java.sql.Timestamp getCreatedAt(){return createdAt;} public void setCreatedAt(java.sql.Timestamp v){createdAt=v;}
+    public boolean isPendingVerification(){
+        return verificationStatus == null || "Pending".equalsIgnoreCase(verificationStatus);
+    }
     public boolean isAdmin(){return "ADMIN".equalsIgnoreCase(role)||"STAFF".equalsIgnoreCase(role);}
 }

@@ -2,14 +2,45 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <% 
 List<User> students=(List<User>)request.getAttribute("students");
+List<User> staffList=(List<User>)request.getAttribute("staffList");
 List<LaundryOrder> orders=(List<LaundryOrder>)request.getAttribute("orders");
 List<RenewalRequest> renewals=(List<RenewalRequest>)request.getAttribute("renewals");
 List<Complaint> complaints=(List<Complaint>)request.getAttribute("complaints");
 List<AuditLog> logs=(List<AuditLog>)request.getAttribute("auditLogs");
 String flash=(String)session.getAttribute("flash"),ft=(String)session.getAttribute("flashType");
 session.removeAttribute("flash");session.removeAttribute("flashType");
-long pending=orders.stream().filter(o->"Pending Approval".equals(o.getStatus())).count(), 
-     active=orders.stream().filter(o->!Set.of("Pending Approval","Delivered","Rejected","Cancelled").contains(o.getStatus())).count();
+
+List<User> pendingStudentsList = new ArrayList<>();
+if(students != null) {
+    for(User st : students) {
+        if(st.isPendingVerification()) {
+            pendingStudentsList.add(st);
+        }
+    }
+}
+
+List<User> pendingStaffList = new ArrayList<>();
+if(staffList != null) {
+    for(User sf : staffList) {
+        if(sf.isPendingVerification()) {
+            pendingStaffList.add(sf);
+        }
+    }
+}
+
+List<LaundryOrder> pendingOrdersList = new ArrayList<>();
+List<LaundryOrder> activeOrdersList = new ArrayList<>();
+if(orders != null) {
+    for(LaundryOrder o : orders) {
+        if(o.isPendingApproval()) {
+            pendingOrdersList.add(o);
+        } else if(!Set.of("Delivered","Rejected","Cancelled").contains(o.getStatus())) {
+            activeOrdersList.add(o);
+        }
+    }
+}
+long totalPending = pendingStudentsList.size() + pendingOrdersList.size() + pendingStaffList.size();
+long active = activeOrdersList.size();
 String tab = request.getParameter("tab");
 if(tab == null) tab = "overview";
 %>
@@ -21,6 +52,7 @@ if(tab == null) tab = "overview";
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/app.css">
     <style>
         .topbar nav a.active { background: #eff6ff; color: var(--blue); }
+        .card.clickable:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
     </style>
 </head>
 <body>
@@ -32,10 +64,10 @@ if(tab == null) tab = "overview";
         <nav>
             <a href="?tab=overview" class="<%= "overview".equals(tab) ? "active" : "" %>">Overview</a>
             <a href="?tab=analytics" class="<%= "analytics".equals(tab) ? "active" : "" %>">Analytics</a>
-            <a href="?tab=requests" class="<%= "requests".equals(tab) ? "active" : "" %>">Requests</a>
+            <a href="?tab=requests" class="<%= "requests".equals(tab) ? "active" : "" %>">Requests<% if(totalPending > 0) { %><span class="badge" style="background:#ef4444;color:white;border-radius:999px;padding:2px 7px;font-size:0.75rem;margin-left:4px;font-weight:700;"><%=totalPending%></span><% } %></a>
             <a href="?tab=pipeline" class="<%= "pipeline".equals(tab) ? "active" : "" %>">Pipeline</a>
             <a href="?tab=history" class="<%= "history".equals(tab) ? "active" : "" %>">History</a>
-            <a href="?tab=students" class="<%= "students".equals(tab) ? "active" : "" %>">Students</a>
+            <a href="?tab=students" class="<%= "students".equals(tab) ? "active" : "" %>">Students<% if(!pendingStudentsList.isEmpty()) { %><span class="badge" style="background:#f59e0b;color:white;border-radius:999px;padding:2px 7px;font-size:0.75rem;margin-left:4px;font-weight:700;"><%=pendingStudentsList.size()%></span><% } %></a>
             <a href="?tab=staff" class="<%= "staff".equals(tab) ? "active" : "" %>">Staff</a>
             <a href="?tab=renewals" class="<%= "renewals".equals(tab) ? "active" : "" %>">Renewals</a>
             <a href="?tab=complaints" class="<%= "complaints".equals(tab) ? "active" : "" %>">Issues</a>
@@ -59,11 +91,173 @@ if(tab == null) tab = "overview";
             <a class="button primary" href="${pageContext.request.contextPath}/admin/scanner">Open Pickup Scanner</a>
         </section>
         <section class="cards">
-            <article class="card"><span>Pending Requests</span><strong><%=pending%></strong></article>
-            <article class="card"><span>Active Pipeline</span><strong><%=active%></strong></article>
-            <article class="card"><span>Students</span><strong><%=students.size()%></strong></article>
-            <article class="card"><span>Open Issues</span><strong><%=complaints.stream().filter(c->"Unresolved".equals(c.getStatus())).count()%></strong></article>
+            <article class="card clickable" onclick="location.href='?tab=requests'" style="cursor:pointer;" title="View all pending requests">
+                <span>Pending Requests</span>
+                <strong style="color: <%= totalPending > 0 ? "var(--blue)" : "inherit" %>;"><%=totalPending%></strong>
+                <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">
+                    <%=pendingStudentsList.size()%> Student Account<%=pendingStudentsList.size()==1?"":"s"%><% if(pendingStaffList.size()>0){ %>, <%=pendingStaffList.size()%> Staff<% } %>, <%=pendingOrdersList.size()%> Laundry
+                </div>
+            </article>
+            <article class="card clickable" onclick="location.href='?tab=pipeline'" style="cursor:pointer;" title="View active pipeline">
+                <span>Active Pipeline</span>
+                <strong><%=active%></strong>
+            </article>
+            <article class="card clickable" onclick="location.href='?tab=students'" style="cursor:pointer;" title="View student list">
+                <span>Total Students</span>
+                <strong><%=students != null ? students.size() : 0%></strong>
+            </article>
+            <article class="card clickable" onclick="location.href='?tab=complaints'" style="cursor:pointer;" title="View open issues">
+                <span>Open Issues</span>
+                <strong><%=complaints != null ? complaints.stream().filter(c->"Unresolved".equals(c.getStatus())).count() : 0%></strong>
+            </article>
         </section>
+
+        <!-- Pending Requests Queue directly on Overview -->
+        <section id="overview-requests">
+            <div class="section-head">
+                <h3>Pending Requests for Approval (<%=totalPending%>)</h3>
+                <a href="?tab=requests" class="linkbtn">Open Requests Tab &rarr;</a>
+            </div>
+
+            <% if(totalPending == 0){ %>
+                <div class="empty">
+                    <p>🎉 No pending student requests waiting for approval. All caught up!</p>
+                </div>
+            <% } %>
+
+            <% if(!pendingStudentsList.isEmpty()){ %>
+            <div style="margin-top:1.5rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <h4 style="margin:0;color:var(--text);font-size:1.05rem;">🎓 New Student Account Registrations (<%=pendingStudentsList.size()%>)</h4>
+                    <small class="muted">Approve new students to activate their access</small>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Photo / ID</th>
+                                <th>Student Name</th>
+                                <th>Roll Number</th>
+                                <th>Email &amp; Phone</th>
+                                <th>Hostel / Room</th>
+                                <th>Registered On</th>
+                                <th>Status</th>
+                                <th>Approval Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for(User st : pendingStudentsList){ %>
+                            <tr>
+                                <td>
+                                    <% if(st.getProfilePhoto()!=null && !st.getProfilePhoto().isBlank()){ %>
+                                        <img src="${pageContext.request.contextPath}/<%=st.getProfilePhoto()%>" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                    <% } else { %>
+                                        <div style="width:38px;height:38px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.9rem;">
+                                            <%= st.getName()!=null && !st.getName().isEmpty() ? st.getName().substring(0,1).toUpperCase() : "S" %>
+                                        </div>
+                                    <% } %>
+                                    <% if(st.getIdCard()!=null && !st.getIdCard().isBlank()){ %>
+                                        <br><a href="${pageContext.request.contextPath}/<%=st.getIdCard()%>" target="_blank" style="font-size:0.72rem;color:var(--blue);text-decoration:underline;">View ID</a>
+                                    <% } %>
+                                </td>
+                                <td><strong><%=st.getName()%></strong></td>
+                                <td><code><%=st.getRollNumber()!=null ? st.getRollNumber() : "N/A"%></code></td>
+                                <td><%=st.getEmail()%><% if(st.getPhone()!=null && !st.getPhone().isBlank()){ %><br><small class="muted">&#128222; <%=st.getPhone()%></small><% } %></td>
+                                <td><%=st.getHostel()!=null ? st.getHostel() : "N/A"%> / <%=st.getRoomNo()!=null ? st.getRoomNo() : "N/A"%></td>
+                                <td><small><%=st.getCreatedAt()!=null ? st.getCreatedAt() : "Recently"%></small></td>
+                                <td><span class="pill" style="background:#fef3c7;color:#92400e;">Pending Approval</span></td>
+                                <td>
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <form method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;">
+                                            <input type="hidden" name="action" value="verify">
+                                            <input type="hidden" name="studentId" value="<%=st.getId()%>">
+                                            <input type="hidden" name="approve" value="true">
+                                            <input type="hidden" name="tab" value="overview">
+                                            <button class="primary small" type="submit">&#10003; Approve Account</button>
+                                        </form>
+                                        <form method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;" onsubmit="return confirm('Are you sure you want to reject student <%=st.getName()%>?');">
+                                            <input type="hidden" name="action" value="verify">
+                                            <input type="hidden" name="studentId" value="<%=st.getId()%>">
+                                            <input type="hidden" name="approve" value="false">
+                                            <input type="hidden" name="tab" value="overview">
+                                            <button class="danger small" type="submit">&#10005; Reject</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <% } %>
+
+            <% if(!pendingOrdersList.isEmpty()){ %>
+            <div style="margin-top:1.5rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <h4 style="margin:0;color:var(--text);font-size:1.05rem;">🧺 Student Laundry Order Requests (<%=pendingOrdersList.size()%>)</h4>
+                    <small class="muted">Assign bags and approve incoming laundry</small>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Student</th>
+                                <th>Request Type</th>
+                                <th>Date Submitted</th>
+                                <th>Garments / Details</th>
+                                <th>Status</th>
+                                <th>Assign Bag</th>
+                                <th>Approval Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for(LaundryOrder o : pendingOrdersList){ %>
+                            <tr>
+                                <td><strong><%=o.getOrderNumber()%></strong></td>
+                                <td><%=o.getStudentName()%><br><small class="muted"><%=o.getStudentRoll()%></small></td>
+                                <td><span class="pill" style="background:#eff6ff;color:var(--blue);">Laundry Request</span></td>
+                                <td><small><%=o.getCreatedAt()%></small></td>
+                                <td>
+                                    <strong><%=o.getTotalItems()%> items</strong>
+                                    <% if(!o.getItems().isEmpty()){ %>
+                                        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">
+                                            <% for(var e : o.getItems().entrySet()){ %>
+                                                <span><%=e.getKey()%>: <b><%=e.getValue()%></b>&nbsp;</span>
+                                            <% } %>
+                                        </div>
+                                    <% } %>
+                                </td>
+                                <td><span class="pill" style="background:#fef3c7;color:#92400e;"><%=o.getStatus()%></span></td>
+                                <td>
+                                    <input type="number" name="bag" form="ovApproveForm_<%=o.getId()%>" min="1" placeholder="e.g. 101" style="width:90px;padding:6px 8px;">
+                                </td>
+                                <td>
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <form id="ovApproveForm_<%=o.getId()%>" method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;">
+                                            <input type="hidden" name="action" value="accept">
+                                            <input type="hidden" name="orderId" value="<%=o.getId()%>">
+                                            <input type="hidden" name="tab" value="overview">
+                                            <button class="primary small" type="submit">Approve + QR</button>
+                                        </form>
+                                        <form method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;" onsubmit="return confirm('Are you sure you want to reject request #<%=o.getOrderNumber()%>?');">
+                                            <input type="hidden" name="action" value="reject">
+                                            <input type="hidden" name="orderId" value="<%=o.getId()%>">
+                                            <input type="hidden" name="tab" value="overview">
+                                            <button class="danger small" type="submit">Reject</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <% } %>
+        </section>
+
         <section>
             <div class="section-head"><h3>Audit Logs</h3></div>
             <div class="table-wrap">
@@ -85,26 +279,163 @@ if(tab == null) tab = "overview";
 
         <% if("requests".equals(tab)) { %>
         <section id="requests">
-            <div class="section-head"><h3>Pending Laundry Requests</h3></div>
-            <div class="table-wrap">
-                <table>
-                    <tr><th>Order</th><th>Student</th><th>Items</th><th>Assign Bag</th><th>Action</th></tr>
-                    <%for(LaundryOrder o:orders)if("Pending Approval".equals(o.getStatus())){%>
-                    <tr>
-                        <td><%=o.getOrderNumber()%></td>
-                        <td><%=o.getStudentName()%><small><%=o.getStudentRoll()%></small></td>
-                        <td><%=o.getTotalItems()%></td>
-                        <td colspan="2">
-                            <form method="post" action="${pageContext.request.contextPath}/admin/action" class="inline">
-                                <input type="hidden" name="action" value="accept">
-                                <input type="hidden" name="orderId" value="<%=o.getId()%>">
-                                <input type="number" name="bag" required min="1" placeholder="905">
-                                <button class="primary small">Accept + Generate QR</button>
-                            </form>
-                        </td>
-                    </tr>
-                    <%}%>
-                </table>
+            <div class="section-head" style="margin-bottom:1.5rem;">
+                <div>
+                    <h3>Pending Requests Queue (<%=totalPending%>)</h3>
+                    <small class="muted">Review and approve incoming student account registrations and laundry service submissions</small>
+                </div>
+            </div>
+
+            <!-- Part 1: Student Account Registrations -->
+            <div class="card" style="margin-bottom:2rem;padding:1.25rem;">
+                <div class="section-head" style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h4 style="margin:0;font-size:1.1rem;">🎓 Student Account Registration Requests (<%=pendingStudentsList.size()%>)</h4>
+                        <small class="muted">New student accounts that require admin verification before login</small>
+                    </div>
+                    <% if(!pendingStudentsList.isEmpty()){ %>
+                        <span class="pill" style="background:#fef3c7;color:#92400e;font-weight:600;"><%=pendingStudentsList.size()%> Awaiting Approval</span>
+                    <% } %>
+                </div>
+                <% if(pendingStudentsList.isEmpty()){ %>
+                    <div class="empty">
+                        <p>🎉 No pending student account registration requests.</p>
+                    </div>
+                <% } else { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Photo / ID</th>
+                                <th>Student Name</th>
+                                <th>Roll Number</th>
+                                <th>Email &amp; Phone</th>
+                                <th>Hostel / Room</th>
+                                <th>Registered Date</th>
+                                <th>Status</th>
+                                <th>Approval Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for(User st : pendingStudentsList){ %>
+                            <tr>
+                                <td>
+                                    <% if(st.getProfilePhoto()!=null && !st.getProfilePhoto().isBlank()){ %>
+                                        <img src="${pageContext.request.contextPath}/<%=st.getProfilePhoto()%>" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--line);" onerror="this.style.display='none'">
+                                    <% } else { %>
+                                        <div style="width:38px;height:38px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.9rem;">
+                                            <%= st.getName()!=null && !st.getName().isEmpty() ? st.getName().substring(0,1).toUpperCase() : "S" %>
+                                        </div>
+                                    <% } %>
+                                    <% if(st.getIdCard()!=null && !st.getIdCard().isBlank()){ %>
+                                        <br><a href="${pageContext.request.contextPath}/<%=st.getIdCard()%>" target="_blank" style="font-size:0.72rem;color:var(--blue);text-decoration:underline;">View ID</a>
+                                    <% } %>
+                                </td>
+                                <td><strong><%=st.getName()%></strong></td>
+                                <td><code><%=st.getRollNumber()!=null ? st.getRollNumber() : "N/A"%></code></td>
+                                <td><%=st.getEmail()%><% if(st.getPhone()!=null && !st.getPhone().isBlank()){ %><br><small class="muted">&#128222; <%=st.getPhone()%></small><% } %></td>
+                                <td><%=st.getHostel()!=null ? st.getHostel() : "N/A"%> / <%=st.getRoomNo()!=null ? st.getRoomNo() : "N/A"%></td>
+                                <td><small><%=st.getCreatedAt()!=null ? st.getCreatedAt() : "Recently"%></small></td>
+                                <td><span class="pill" style="background:#fef3c7;color:#92400e;">Pending Approval</span></td>
+                                <td>
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <form method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;">
+                                            <input type="hidden" name="action" value="verify">
+                                            <input type="hidden" name="studentId" value="<%=st.getId()%>">
+                                            <input type="hidden" name="approve" value="true">
+                                            <input type="hidden" name="tab" value="requests">
+                                            <button class="primary small" type="submit">&#10003; Approve Account</button>
+                                        </form>
+                                        <form method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;" onsubmit="return confirm('Are you sure you want to reject registration for <%=st.getName()%>?');">
+                                            <input type="hidden" name="action" value="verify">
+                                            <input type="hidden" name="studentId" value="<%=st.getId()%>">
+                                            <input type="hidden" name="approve" value="false">
+                                            <input type="hidden" name="tab" value="requests">
+                                            <button class="danger small" type="submit">&#10005; Reject</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </div>
+
+            <!-- Part 2: Laundry Order Requests -->
+            <div class="card" style="margin-bottom:2rem;padding:1.25rem;">
+                <div class="section-head" style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h4 style="margin:0;font-size:1.1rem;">🧺 Laundry Order Requests (<%=pendingOrdersList.size()%>)</h4>
+                        <small class="muted">Review student laundry submissions, assign bag numbers, and approve or reject</small>
+                    </div>
+                    <% if(!pendingOrdersList.isEmpty()){ %>
+                        <span class="pill" style="background:#fef3c7;color:#92400e;font-weight:600;"><%=pendingOrdersList.size()%> Awaiting Bag &amp; Approval</span>
+                    <% } %>
+                </div>
+                <% if(pendingOrdersList.isEmpty()){ %>
+                    <div class="empty">
+                        <p>🎉 No pending laundry requests waiting for approval.</p>
+                    </div>
+                <% } else { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Student</th>
+                                <th>Request Type</th>
+                                <th>Date Submitted</th>
+                                <th>Garments / Details</th>
+                                <th>Status</th>
+                                <th>Assign Bag</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for(LaundryOrder o : pendingOrdersList){ %>
+                            <tr>
+                                <td><strong><%=o.getOrderNumber()%></strong></td>
+                                <td><%=o.getStudentName()%><br><small class="muted"><%=o.getStudentRoll()%></small></td>
+                                <td><span class="pill" style="background:#eff6ff;color:var(--blue);">Laundry Request</span></td>
+                                <td><small><%=o.getCreatedAt()%></small></td>
+                                <td>
+                                    <strong><%=o.getTotalItems()%> items</strong>
+                                    <% if(!o.getItems().isEmpty()){ %>
+                                        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">
+                                            <% for(var e : o.getItems().entrySet()){ %>
+                                                <span><%=e.getKey()%>: <b><%=e.getValue()%></b>&nbsp;</span>
+                                            <% } %>
+                                        </div>
+                                    <% } %>
+                                </td>
+                                <td><span class="pill" style="background:#fef3c7;color:#92400e;"><%=o.getStatus()%></span></td>
+                                <td>
+                                    <input type="number" name="bag" form="reqApproveForm_<%=o.getId()%>" min="1" placeholder="e.g. 101" style="width:90px;padding:6px 8px;">
+                                </td>
+                                <td>
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <form id="reqApproveForm_<%=o.getId()%>" method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;">
+                                            <input type="hidden" name="action" value="accept">
+                                            <input type="hidden" name="orderId" value="<%=o.getId()%>">
+                                            <input type="hidden" name="tab" value="requests">
+                                            <button class="primary small" type="submit">Approve + QR</button>
+                                        </form>
+                                        <form method="post" action="${pageContext.request.contextPath}/admin/action" style="margin:0;" onsubmit="return confirm('Are you sure you want to reject request #<%=o.getOrderNumber()%>?');">
+                                            <input type="hidden" name="action" value="reject">
+                                            <input type="hidden" name="orderId" value="<%=o.getId()%>">
+                                            <input type="hidden" name="tab" value="requests">
+                                            <button class="danger small" type="submit">Reject</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
             </div>
         </section>
         <% } %>
@@ -192,7 +523,6 @@ if(tab == null) tab = "overview";
         <% } %>
 
         <% if("staff".equals(tab)) { %>
-        <% List<User> staffList=(List<User>)request.getAttribute("staffList"); %>
         <section id="staff">
             <div class="section-head"><h3>Staff Verification</h3></div>
             <div class="table-wrap">
@@ -357,7 +687,7 @@ if(tab == null) tab = "overview";
                 if("Ironing".equals(o.getCurrentStage())) cIron++;
                 if("Ready for Pickup".equals(o.getCurrentStage())) cReady++;
                 
-                if("Pending Approval".equals(o.getStatus())) sPend++;
+                if(o.isPendingApproval()) sPend++;
                 else if("Delivered".equals(o.getStatus())) sDel++;
                 else if("Rejected".equals(o.getStatus()) || "Cancelled".equals(o.getStatus())) sRej++;
                 else sAct++;

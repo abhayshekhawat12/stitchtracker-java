@@ -135,7 +135,7 @@
             <div class="alert error"><%=request.getAttribute("error")%></div>
         <% } %>
         
-        <form method="post" id="laundryForm" onsubmit="return handleSubmit()">
+        <form method="post" action="${pageContext.request.contextPath}/student/new-request" id="laundryForm" onsubmit="return handleSubmit()">
             <div class="garment-grid">
                 <% for(String c:cats){ String key="item_"+c.replace(" ","_"); %>
                 <div class="garment">

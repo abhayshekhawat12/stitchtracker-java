@@ -6,7 +6,7 @@ import java.sql.*;
 import java.util.*;
 
 public class LaundryDAO {
-    private static final String SELECT="SELECT o.*,u.name student_name,u.roll_number student_roll,u.phone student_phone FROM laundry_orders o JOIN users u ON u.id=o.student_id";
+    private static final String SELECT="SELECT o.*, COALESCE(u.name, 'Unknown Student') student_name, COALESCE(u.roll_number, '-') student_roll, u.phone student_phone FROM laundry_orders o LEFT JOIN users u ON u.id=o.student_id";
 
     public long create(long studentId, Map<String,Integer> items) throws SQLException {
         int total=items.values().stream().mapToInt(Integer::intValue).sum();
@@ -29,14 +29,28 @@ public class LaundryDAO {
     public LaundryOrder findById(long id) throws SQLException {List<LaundryOrder> x=query(SELECT+" WHERE o.id=?",id);return x.isEmpty()?null:x.get(0);}
 
     public void accept(long orderId,long staffId,String bagNumber,String qrToken) throws SQLException {
+        if(bagNumber == null || bagNumber.isBlank()) {
+            bagNumber = String.valueOf(orderId);
+        }
+        bagNumber = bagNumber.trim();
         if(!bagNumber.matches("\\d+")) throw new SQLException("Bag number must be numeric (e.g. 1, 2, 101).");
         try(Connection c=DBConnection.getConnection()){
-            try(PreparedStatement chk=c.prepareStatement("SELECT COUNT(*) FROM laundry_orders WHERE UPPER(bag_number)=UPPER(?) AND status NOT IN ('Delivered','Cancelled','Rejected')")){chk.setString(1,bagNumber);try(ResultSet r=chk.executeQuery()){r.next();if(r.getInt(1)>0)throw new SQLException("This bag is already in use.");}}
-            try(PreparedStatement p=c.prepareStatement("UPDATE laundry_orders SET bag_number=?,qr_token=?,qr_status='unused',status='Received',current_stage='Received',accepted_by=?,accepted_at=NOW(),estimated_completion=DATE_ADD(NOW(),INTERVAL 2 DAY) WHERE id=? AND status='Pending Approval'")){p.setString(1,bagNumber.toUpperCase());p.setString(2,qrToken);p.setLong(3,staffId);p.setLong(4,orderId);if(p.executeUpdate()==0)throw new SQLException("Order is no longer pending approval.");}
+            try(PreparedStatement chk=c.prepareStatement("SELECT COUNT(*) FROM laundry_orders WHERE UPPER(bag_number)=UPPER(?) AND id!=? AND UPPER(status) NOT IN ('DELIVERED','CANCELLED','REJECTED')")){chk.setString(1,bagNumber);chk.setLong(2,orderId);try(ResultSet r=chk.executeQuery()){r.next();if(r.getInt(1)>0)throw new SQLException("This bag is already in use.");}}
+            try(PreparedStatement p=c.prepareStatement("UPDATE laundry_orders SET bag_number=?,qr_token=?,qr_status='unused',status='Received',current_stage='Received',accepted_by=?,accepted_at=NOW(),estimated_completion=DATE_ADD(NOW(),INTERVAL 2 DAY) WHERE id=? AND UPPER(status) IN ('PENDING APPROVAL', 'PENDING')")){p.setString(1,bagNumber.toUpperCase());p.setString(2,qrToken);p.setLong(3,staffId);p.setLong(4,orderId);if(p.executeUpdate()==0)throw new SQLException("Order is no longer pending approval.");}
         }
     }
 
-    public void reject(long orderId) throws SQLException {updateStage(orderId,"Rejected");}
+    public void reject(long orderId) throws SQLException {
+        try(Connection c=DBConnection.getConnection();
+            PreparedStatement p=c.prepareStatement("UPDATE laundry_orders SET status='Rejected',current_stage='Rejected' WHERE id=? AND UPPER(status) IN ('PENDING APPROVAL', 'PENDING')")){
+            p.setLong(1,orderId);
+            if(p.executeUpdate()==0) throw new SQLException("Order is no longer pending approval.");
+        }
+        LaundryOrder o = findById(orderId);
+        if (o != null) {
+            new SupportDAO().notify(o.getStudentId(), "Order Rejected", "Your laundry request #" + o.getOrderNumber() + " has been rejected by admin.");
+        }
+    }
     public void updateStage(long orderId,String stage) throws SQLException {
         Set<String> allowed=Set.of("Received","Sorting","Washing","Drying","Ironing","Ready for Pickup","Delivered","Rejected","Cancelled");
         if(!allowed.contains(stage)) throw new SQLException("Invalid stage");

@@ -133,7 +133,7 @@
                     <% if(!"Cancelled".equals(o.getStatus()) && !"Rejected".equals(o.getStatus())) { %>
                     <div class="timeline">
                         <div class="timeline-step completed"><div class="timeline-dot"></div><div class="timeline-label">Submitted</div></div>
-                        <div class="timeline-step <%= isAssigned ? "completed" : (o.getStatus().equals("Pending Approval") ? "current" : "") %>"><div class="timeline-dot"></div><div class="timeline-label">Bag Assigned</div></div>
+                        <div class="timeline-step <%= isAssigned ? "completed" : (o.isPendingApproval() ? "current" : "") %>"><div class="timeline-dot"></div><div class="timeline-label">Bag Assigned</div></div>
                         <div class="timeline-step <%= isPickedUp ? "completed" : (isAssigned && !isPickedUp ? "current" : "") %>"><div class="timeline-dot"></div><div class="timeline-label">Picked Up</div></div>
                         <div class="timeline-step <%= isWashing ? "completed" : (isPickedUp && !isWashing ? "current" : "") %>"><div class="timeline-dot"></div><div class="timeline-label">Washing</div></div>
                         <div class="timeline-step <%= isReady ? "completed" : (isWashing && !isReady ? "current" : "") %>"><div class="timeline-dot"></div><div class="timeline-label">Ready</div></div>

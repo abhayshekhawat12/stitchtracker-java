@@ -8,8 +8,8 @@
     session.removeAttribute("flash"); session.removeAttribute("flashType");
     String tab = request.getParameter("tab");
     if (tab == null) tab = "pending";
-    long pendingCount  = orders.stream().filter(o -> "Pending Approval".equals(o.getStatus())).count();
-    long activeCount   = orders.stream().filter(o -> !Set.of("Pending Approval","Delivered","Rejected","Cancelled").contains(o.getStatus())).count();
+    long pendingCount  = orders.stream().filter(LaundryOrder::isPendingApproval).count();
+    long activeCount   = orders.stream().filter(o -> !o.isPendingApproval() && !Set.of("Delivered","Rejected","Cancelled").contains(o.getStatus())).count();
     long deliveredCount= orders.stream().filter(o -> "Delivered".equals(o.getStatus())).count();
     com.stitchtrack.model.User staffUser = (com.stitchtrack.model.User) session.getAttribute("user");
 %>
@@ -294,7 +294,7 @@
     <%
         boolean anyPending = false;
         for (LaundryOrder o : orders) {
-            if (!"Pending Approval".equals(o.getStatus())) continue;
+            if (!o.isPendingApproval()) continue;
             anyPending = true;
     %>
     <div class="request-card">
@@ -357,7 +357,7 @@
             <%
                 boolean anyActive = false;
                 for (LaundryOrder o : orders) {
-                    if (Set.of("Pending Approval","Delivered","Rejected","Cancelled").contains(o.getStatus())) continue;
+                    if (o.isPendingApproval() || Set.of("Delivered","Rejected","Cancelled").contains(o.getStatus())) continue;
                     anyActive = true;
             %>
             <tr class="pipeline-row">

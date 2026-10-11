@@ -32,19 +32,41 @@ public class RegisterServlet extends HttpServlet {
             u.setGender(r.getParameter("gender"));
             String type = r.getParameter("type");
 
-            // Handle file uploads to Cloudinary
+            // Handle file uploads (Cloudinary with local storage fallback)
             Part profilePart = r.getPart("profile_photo");
             Part idCardPart = r.getPart("id_card");
             
             if (profilePart != null && profilePart.getSize() > 0) {
                 String fileName = java.util.UUID.randomUUID().toString() + "_" + getFileName(profilePart);
-                String url = com.stitchtrack.util.CloudinaryService.uploadImage(profilePart.getInputStream(), fileName);
-                if (url != null) u.setProfilePhoto(url);
+                String url = null;
+                try {
+                    url = com.stitchtrack.util.CloudinaryService.uploadImage(profilePart.getInputStream(), fileName);
+                } catch (Exception ex) {
+                    url = null;
+                }
+                if (url != null) {
+                    u.setProfilePhoto(url);
+                } else {
+                    java.io.File savedFile = new java.io.File(uploadDir, fileName);
+                    profilePart.write(savedFile.getAbsolutePath());
+                    u.setProfilePhoto(UPLOAD_DIR + "/" + fileName);
+                }
             }
             if (idCardPart != null && idCardPart.getSize() > 0) {
                 String fileName = java.util.UUID.randomUUID().toString() + "_" + getFileName(idCardPart);
-                String url = com.stitchtrack.util.CloudinaryService.uploadImage(idCardPart.getInputStream(), fileName);
-                if (url != null) u.setIdCard(url);
+                String url = null;
+                try {
+                    url = com.stitchtrack.util.CloudinaryService.uploadImage(idCardPart.getInputStream(), fileName);
+                } catch (Exception ex) {
+                    url = null;
+                }
+                if (url != null) {
+                    u.setIdCard(url);
+                } else {
+                    java.io.File savedFile = new java.io.File(uploadDir, fileName);
+                    idCardPart.write(savedFile.getAbsolutePath());
+                    u.setIdCard(UPLOAD_DIR + "/" + fileName);
+                }
             }
 
             String pw = r.getParameter("password");

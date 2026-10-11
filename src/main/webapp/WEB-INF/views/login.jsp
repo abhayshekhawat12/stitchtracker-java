@@ -134,7 +134,7 @@
         <div class="role-selector" id="roleSelector">
 
             <div class="role-card" id="cardStudent">
-                <input type="radio" name="roleChoice" id="roleStudent" value="STUDENT" checked onchange="switchRole('STUDENT')">
+                <input type="radio" name="roleChoice" id="roleStudent" value="STUDENT" form="loginForm" checked onchange="switchRole('STUDENT')">
                 <label class="role-label" for="roleStudent">
                     <span class="role-icon">🎓</span>
                     <span class="role-name">STUDENT</span>
@@ -143,7 +143,7 @@
             </div>
 
             <div class="role-card staff" id="cardStaff">
-                <input type="radio" name="roleChoice" id="roleStaff" value="STAFF" onchange="switchRole('STAFF')">
+                <input type="radio" name="roleChoice" id="roleStaff" value="STAFF" form="loginForm" onchange="switchRole('STAFF')">
                 <label class="role-label" for="roleStaff">
                     <span class="role-icon">🧺</span>
                     <span class="role-name">STAFF</span>
@@ -152,7 +152,7 @@
             </div>
 
             <div class="role-card admin" id="cardAdmin">
-                <input type="radio" name="roleChoice" id="roleAdmin" value="ADMIN" onchange="switchRole('ADMIN')">
+                <input type="radio" name="roleChoice" id="roleAdmin" value="ADMIN" form="loginForm" onchange="switchRole('ADMIN')">
                 <label class="role-label" for="roleAdmin">
                     <span class="role-icon">🛡️</span>
                     <span class="role-name">ADMIN</span>

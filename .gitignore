@@ -22,4 +22,8 @@ uploads/
 .DS_Store
 Thumbs.db
 
+# Logs
+logs/
+*.log
+
 src/main/resources/application.properties

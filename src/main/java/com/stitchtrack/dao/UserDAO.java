@@ -7,7 +7,7 @@ import java.sql.*;
 import java.util.*;
 
 public class UserDAO {
-    private static final String BASE = "SELECT id,name,roll_number,email,phone,hostel,room_no,gender,membership_limit,membership_used,quota_reset_date,account_status,verification_status,renewal_status,role,profile_photo,id_card FROM users";
+    private static final String BASE = "SELECT id,name,roll_number,email,phone,hostel,room_no,gender,membership_limit,membership_used,quota_reset_date,account_status,verification_status,renewal_status,role,profile_photo,id_card,created_at FROM users";
 
     public User authenticate(String identifier, String password) throws SQLException {
         String sql = BASE + " WHERE (LOWER(email)=LOWER(?) OR LOWER(roll_number)=LOWER(?)) LIMIT 1";
@@ -66,6 +66,6 @@ public class UserDAO {
     }
 
     private User map(ResultSet r) throws SQLException {
-        User u=new User();u.setId(r.getLong("id"));u.setName(r.getString("name"));u.setRollNumber(r.getString("roll_number"));u.setEmail(r.getString("email"));u.setPhone(r.getString("phone"));u.setHostel(r.getString("hostel"));u.setRoomNo(r.getString("room_no"));u.setGender(r.getString("gender"));u.setMembershipLimit(r.getInt("membership_limit"));u.setMembershipUsed(r.getInt("membership_used"));java.sql.Date d=r.getDate("quota_reset_date");if(d!=null)u.setQuotaResetDate(d.toLocalDate());u.setAccountStatus(r.getString("account_status"));u.setVerificationStatus(r.getString("verification_status"));u.setRenewalStatus(r.getString("renewal_status"));u.setRole(r.getString("role"));u.setProfilePhoto(r.getString("profile_photo"));u.setIdCard(r.getString("id_card"));return u;
+        User u=new User();u.setId(r.getLong("id"));u.setName(r.getString("name"));u.setRollNumber(r.getString("roll_number"));u.setEmail(r.getString("email"));u.setPhone(r.getString("phone"));u.setHostel(r.getString("hostel"));u.setRoomNo(r.getString("room_no"));u.setGender(r.getString("gender"));u.setMembershipLimit(r.getInt("membership_limit"));u.setMembershipUsed(r.getInt("membership_used"));java.sql.Date d=r.getDate("quota_reset_date");if(d!=null)u.setQuotaResetDate(d.toLocalDate());u.setAccountStatus(r.getString("account_status"));u.setVerificationStatus(r.getString("verification_status"));u.setRenewalStatus(r.getString("renewal_status"));u.setRole(r.getString("role"));u.setProfilePhoto(r.getString("profile_photo"));u.setIdCard(r.getString("id_card"));u.setCreatedAt(r.getTimestamp("created_at"));return u;
     }
 }

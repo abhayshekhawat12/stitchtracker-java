@@ -26,4 +26,9 @@ public class LaundryOrder {
     public Timestamp getEstimatedCompletion(){return estimatedCompletion;} public void setEstimatedCompletion(Timestamp v){estimatedCompletion=v;}
     public Timestamp getDeliveredAt(){return deliveredAt;} public void setDeliveredAt(Timestamp v){deliveredAt=v;}
     public Map<String,Integer> getItems(){return items;}
+    public boolean isPendingApproval(){
+        if(status==null) return false;
+        String s=status.trim().toUpperCase();
+        return s.equals("PENDING APPROVAL") || s.equals("PENDING");
+    }
 }
