@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: stitchtrack_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: stitchtrack_java
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/stitchtrack_mysql.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stitchtrack_app
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      STITCHTRACK_DB_URL: jdbc:mysql://mysql:3306/stitchtrack_java?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Kolkata
+      STITCHTRACK_DB_USER: root
+      STITCHTRACK_DB_PASSWORD: root
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:

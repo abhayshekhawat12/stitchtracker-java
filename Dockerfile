@@ -13,8 +13,8 @@ RUN rm -rf /usr/local/tomcat/webapps/ROOT
 # Copy the compiled WAR file from the build stage to Tomcat's webapps directory as ROOT.war
 COPY --from=build /app/target/stitchtrack.war /usr/local/tomcat/webapps/ROOT.war
 
-# Expose port 8080 (Render expects web services to listen on a port, Tomcat defaults to 8080)
+# Expose port 8080 (Default fallback port)
 EXPOSE 8080
 
-# Start Tomcat
-CMD ["catalina.sh", "run"]
+# Start Tomcat with dynamic PORT adaptation for platforms like Render, Railway, Heroku, etc.
+CMD ["sh", "-c", "sed -i \"s/port=\\\"8080\\\"/port=\\\"${PORT:-8080}\\\"/g\" /usr/local/tomcat/conf/server.xml && catalina.sh run"]

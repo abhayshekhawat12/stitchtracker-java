@@ -1,3 +1,31 @@
 package com.stitchtrack.controller;
-import com.stitchtrack.model.User;import jakarta.servlet.annotation.WebServlet;import jakarta.servlet.http.*;import java.io.IOException;
-@WebServlet("") public class HomeServlet extends HttpServlet{protected void doGet(HttpServletRequest r,HttpServletResponse s)throws IOException{HttpSession x=r.getSession(false);User u=x==null?null:(User)x.getAttribute("user");s.sendRedirect(r.getContextPath()+(u==null?"/login":u.isAdmin()?"/admin/dashboard":"/student/dashboard"));}}
+
+import com.stitchtrack.model.User;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+
+@WebServlet({"", "/home"})
+public class HomeServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        HttpSession session = req.getSession(false);
+        User user = (session == null) ? null : (User) session.getAttribute("user");
+        
+        String dest;
+        if (user == null) {
+            dest = "/login";
+        } else if (user.isAdmin()) {
+            dest = "/admin/dashboard";
+        } else if (user.isStaff()) {
+            dest = "/staff/dashboard";
+        } else {
+            dest = "/student/dashboard";
+        }
+        
+        resp.sendRedirect(req.getContextPath() + dest);
+    }
+}

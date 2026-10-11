@@ -33,5 +33,7 @@ public class User {
     public boolean isPendingVerification(){
         return verificationStatus == null || "Pending".equalsIgnoreCase(verificationStatus);
     }
-    public boolean isAdmin(){return "ADMIN".equalsIgnoreCase(role)||"STAFF".equalsIgnoreCase(role);}
+    public boolean isAdmin(){return "ADMIN".equalsIgnoreCase(role);}
+    public boolean isStaff(){return "STAFF".equalsIgnoreCase(role);}
+    public boolean isStudent(){return "STUDENT".equalsIgnoreCase(role);}
 }
