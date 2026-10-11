@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StitchTrack — Smart Campus Laundry Management System</title>
+    <meta name="description" content="Next-generation laundry tracking, QR pickup verification, and garment workflow automation for campus students, staff, and administrators.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #090d16;
+            --bg-secondary: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(56, 189, 248, 0.3);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-indigo: #6366f1;
+            --accent-purple: #a855f7;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --gradient-accent: linear-gradient(135deg, #38bdf8 0%, #6366f1 50%, #a855f7 100%);
+            --gradient-glow: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.18), transparent 70%);
+            --shadow-card: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: var(--gradient-glow);
+            min-height: 100vh;
+        }
+
+        /* Ambient glowing background circles */
+        .ambient-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+        }
+        .glow-1 { top: -200px; left: -100px; background: #38bdf8; }
+        .glow-2 { top: 30%; right: -150px; background: #a855f7; }
+        .glow-3 { bottom: 0; left: 20%; background: #6366f1; }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(9, 13, 22, 0.75);
+        }
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--gradient-accent);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+        }
+        .logo-badge {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--border-highlight);
+        }
+        .btn-primary {
+            background: var(--gradient-accent);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--accent-blue);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            animation: pulse 2.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.2); }
+            50% { box-shadow: 0 0 20px 4px rgba(56, 189, 248, 0.2); }
+        }
+
+        .hero h1 {
+            font-size: clamp(38px, 6vw, 64px);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            max-width: 900px;
+            margin: 0 auto 24px;
+        }
+        .gradient-text {
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: clamp(16px, 2vw, 20px);
+            color: var(--text-secondary);
+            max-width: 680px;
+            margin: 0 auto 40px;
+        }
+
+        /* Status Banner */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 18px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 40px;
+            color: var(--accent-emerald);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 40px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-emerald);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-emerald);
+        }
+
+        /* Live Preview Widget */
+        .preview-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            max-width: 860px;
+            margin: 0 auto 80px;
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(16px);
+            position: relative;
+            text-align: left;
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .preview-order-id {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .preview-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Timeline */
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin: 28px 0;
+            position: relative;
+        }
+        .timeline-step {
+            text-align: center;
+            position: relative;
+        }
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            top: 14px;
+            left: -50%;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1;
+        }
+        .timeline-step:first-child::before { display: none; }
+        .timeline-step.completed::before { background: var(--accent-emerald); }
+        .step-bubble {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s;
+        }
+        .timeline-step.completed .step-bubble {
+            background: var(--accent-emerald);
+            border-color: var(--accent-emerald);
+            color: white;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+        }
+        .timeline-step.active .step-bubble {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+            animation: pulse-bubble 2s infinite;
+        }
+        @keyframes pulse-bubble {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        .step-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .timeline-step.completed .step-label,
+        .timeline-step.active .step-label {
+            color: var(--text-primary);
+        }
+
+        .preview-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .detail-item h4 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .detail-item p {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Role Portals Grid */
+        .portals-section {
+            padding: 60px 0 100px;
+        }
+        .section-head {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .section-head h2 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.8px;
+            margin-bottom: 12px;
+        }
+        .section-head p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .portals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+        .portal-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px 30px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            transition: background 0.3s;
+        }
+        .portal-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--border-highlight);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+        .portal-student:hover::before { background: var(--accent-blue); }
+        .portal-staff:hover::before { background: #7c3aed; }
+        .portal-admin:hover::before { background: #f43f5e; }
+
+        .portal-icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .portal-card h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .portal-card p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 24px;
+            min-height: 42px;
+        }
+        .portal-features {
+            list-style: none;
+            margin-bottom: 28px;
+        }
+        .portal-features li {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .portal-features li span {
+            color: var(--accent-emerald);
+            font-weight: bold;
+        }
+
+        /* Tech Specs Grid */
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 60px 0;
+        }
+        .spec-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: center;
+        }
+        .spec-item h5 {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .spec-item p {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Interactive Demo Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-highlight);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 520px;
+            padding: 32px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            position: relative;
+            animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .timeline {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 18px;
+            }
+            .timeline-step::before { display: none; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="container nav-inner">
+            <a href="/" class="logo-wrap">
+                <div class="logo-icon">🧺</div>
+                <div>
+                    <span class="logo-text">StitchTrack</span>
+                    <span class="logo-badge">PRO</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#portals">Role Portals</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#credentials">Demo Access</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn btn-outline" onclick="openDemo('STUDENT')">Student Login</button>
+                <button class="btn btn-primary" onclick="openDemo('ADMIN')">Admin Portal</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero container" id="overview">
+        <div class="hero-badge">
+            ⚡ Automated Campus Laundry Management System
+        </div>
+        <h1>
+            Smart, Contactless Laundry Operations <br>
+            <span class="gradient-text">Engineered for Universities</span>
+        </h1>
+        <p>
+            From bag intake to contactless QR delivery — eliminate laundry bottlenecks, prevent mismatches, and automate garment workflows across students, staff, and campus administrators.
+        </p>
+
+        <div class="status-pill">
+            <span class="status-dot"></span>
+            System Engine Ready &bull; Docker Containerized &bull; Tomcat 10 & MySQL 8
+        </div>
+
+        <!-- Live Interactive Order Preview -->
+        <div class="preview-card">
+            <div class="preview-header">
+                <div>
+                    <div class="preview-order-id">Order #ST-89042 &bull; Bag #ST-42</div>
+                    <div style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+                        Student: Abhay Shekhawat (Roll: 21BCE1042 &bull; Hostel H4-302)
+                    </div>
+                </div>
+                <div class="preview-badge">Ready for Pickup 📦</div>
+            </div>
+
+            <!-- Pipeline Timeline -->
+            <div class="timeline">
+                <div class="timeline-step completed">
+                    <div class="step-bubble">✓</div>
+                    <div class="step-label">Submitted</div>
+                </div>
+                <div class="timeline-step completed">
+                    <div class="step-bubble">✓</div>
+                    <div class="step-label">Bag Assigned</div>
+                </div>
+                <div class="timeline-step completed">
+                    <div class="step-bubble">✓</div>
+                    <div class="step-label">Picked Up</div>
+                </div>
+                <div class="timeline-step completed">
+                    <div class="step-bubble">✓</div>
+                    <div class="step-label">Washing/Iron</div>
+                </div>
+                <div class="timeline-step active">
+                    <div class="step-bubble">📍</div>
+                    <div class="step-label">Ready (Scan QR)</div>
+                </div>
+            </div>
+
+            <div class="preview-details">
+                <div class="detail-item">
+                    <h4>Garment Items</h4>
+                    <p>8 Items (4 Shirts, 2 Jeans, 2 Bedcovers)</p>
+                </div>
+                <div class="detail-item">
+                    <h4>Scale Weight</h4>
+                    <p>4.65 kg Verified</p>
+                </div>
+                <div class="detail-item">
+                    <h4>Security Token</h4>
+                    <p style="font-family:monospace; color:var(--accent-blue);">STITCH-883F91A</p>
+                </div>
+                <div class="detail-item">
+                    <h4>Remaining Credits</h4>
+                    <p>192 / 200 Credits</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Role Portals Grid -->
+    <section class="container portals-section" id="portals">
+        <div class="section-head">
+            <h2>Three Tailored Portals</h2>
+            <p>Role-based access control protecting every stage of campus laundry fulfillment</p>
+        </div>
+
+        <div class="portals-grid">
+            <!-- Student Portal -->
+            <div class="portal-card portal-student">
+                <div class="portal-icon">🎓</div>
+                <h3>Student Portal</h3>
+                <p>Submit laundry bags, monitor stage pipelines, and generate pickup QR codes on mobile.</p>
+                <ul class="portal-features">
+                    <li><span>✓</span> Itemized garment submission grid</li>
+                    <li><span>✓</span> Real-time 5-stage workflow tracking</li>
+                    <li><span>✓</span> Secure dynamic QR code for pickup</li>
+                    <li><span>✓</span> Semester membership quota monitoring</li>
+                </ul>
+                <button class="btn btn-outline" style="width:100%;" onclick="openDemo('STUDENT')">Access Student Portal →</button>
+            </div>
+
+            <!-- Staff Portal -->
+            <div class="portal-card portal-staff">
+                <div class="portal-icon">🧺</div>
+                <h3>Staff Desk Portal</h3>
+                <p>Desk operations, bag number assignment, batch pipeline updates, and camera QR scanner.</p>
+                <ul class="portal-features">
+                    <li><span>✓</span> Intake approval & physical bag assignment</li>
+                    <li><span>✓</span> Camera QR barcode pickup scanner</li>
+                    <li><span>✓</span> One-click stage progression (Wash, Iron, Ready)</li>
+                    <li><span>✓</span> Automated quota deduction on delivery</li>
+                </ul>
+                <button class="btn btn-outline" style="width:100%;" onclick="openDemo('STAFF')">Access Staff Portal →</button>
+            </div>
+
+            <!-- Admin Portal -->
+            <div class="portal-card portal-admin">
+                <div class="portal-icon">🛡️</div>
+                <h3>Admin Console</h3>
+                <p>Complete facility control, student verification approval, quota overrides, and audits.</p>
+                <ul class="portal-features">
+                    <li><span>✓</span> Student & Staff ID verification approval</li>
+                    <li><span>✓</span> Master orders directory & CSV export</li>
+                    <li><span>✓</span> Renewal request & mismatch ticket resolver</li>
+                    <li><span>✓</span> Full security audit logging & metrics</li>
+                </ul>
+                <button class="btn btn-outline" style="width:100%;" onclick="openDemo('ADMIN')">Access Admin Console →</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Architecture Specs -->
+    <section class="container" id="architecture" style="padding-bottom: 60px;">
+        <div class="section-head">
+            <h2>Enterprise Tech Architecture</h2>
+            <p>Production-grade Jakarta EE stack containerized for reliability and speed</p>
+        </div>
+
+        <div class="specs-grid">
+            <div class="spec-item">
+                <h5>Language / Runtime</h5>
+                <p>Java 17 (Temurin)</p>
+            </div>
+            <div class="spec-item">
+                <h5>Servlet Container</h5>
+                <p>Apache Tomcat 10.1</p>
+            </div>
+            <div class="spec-item">
+                <h5>Database & Pooling</h5>
+                <p>MySQL 8 + HikariCP</p>
+            </div>
+            <div class="spec-item">
+                <h5>Security</h5>
+                <p>BCrypt + CSRF Guard</p>
+            </div>
+            <div class="spec-item">
+                <h5>Packaging</h5>
+                <p>Maven WAR / Docker</p>
+            </div>
+            <div class="spec-item">
+                <h5>Cloud Native</h5>
+                <p>Dynamic Port & Render YAML</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Credentials Section -->
+    <section class="container" id="credentials" style="padding-bottom: 80px;">
+        <div class="preview-card" style="text-align:center;">
+            <h3 style="font-size:22px; margin-bottom:12px;">Default Pre-Configured Accounts</h3>
+            <p style="color:var(--text-secondary); margin-bottom:24px; font-size:14px;">
+                Use these verified credentials on your hosted application server:
+            </p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; text-align:left;">
+                <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+                    <div style="font-weight:700; color:var(--accent-blue); margin-bottom:4px;">🛡️ Facility Admin</div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Email: <code>stitchtrackeradmin@gmail.com</code></div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Password: <code>stitchtracker56@</code></div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+                    <div style="font-weight:700; color:#a855f7; margin-bottom:4px;">🧺 Laundry Staff</div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Email: <code>laundrystaff@stitchtrack.com</code></div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Password: <code>laundry@staff123</code></div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+                    <div style="font-weight:700; color:var(--accent-emerald); margin-bottom:4px;">🎓 Student Registration</div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Register instantly via <code>/register</code></div>
+                    <div style="font-size:13px; color:var(--text-secondary);">Approved by Facility Admin</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Role Portal Modal -->
+    <div class="modal-overlay" id="demoModal">
+        <div class="modal-card">
+            <button class="modal-close" onclick="closeDemo()">&times;</button>
+            <h3 id="modalTitle" style="font-size:22px; margin-bottom:8px;">Sign In to Portal</h3>
+            <p id="modalSub" style="color:var(--text-secondary); font-size:13px; margin-bottom:20px;">
+                Connecting to Laundry Management System
+            </p>
+            <form onsubmit="handlePortalSubmit(event)">
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">Role</label>
+                    <input type="text" id="modalRoleField" readonly style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-primary); font-weight:600;">
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">Email or Roll Number</label>
+                    <input type="text" id="modalEmailField" required style="width:100%; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-primary);">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">Password</label>
+                    <input type="password" id="modalPassField" required style="width:100%; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-primary);">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Continue to Portal &rarr;</button>
+            </form>
+            <div id="modalNotice" style="margin-top:16px; font-size:12px; text-align:center; color:var(--text-muted);"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 StitchTrack Campus Laundry System &bull; Java 17 Jakarta Servlet &bull; Apache Tomcat 10 &bull; MySQL 8</p>
+        </div>
+    </footer>
+
+    <script>
+        function openDemo(role) {
+            const modal = document.getElementById('demoModal');
+            const roleField = document.getElementById('modalRoleField');
+            const emailField = document.getElementById('modalEmailField');
+            const passField = document.getElementById('modalPassField');
+            const modalTitle = document.getElementById('modalTitle');
+            const notice = document.getElementById('modalNotice');
+
+            roleField.value = role;
+            if (role === 'ADMIN') {
+                modalTitle.textContent = '🛡️ Admin Console Login';
+                emailField.value = 'stitchtrackeradmin@gmail.com';
+                passField.value = 'stitchtracker56@';
+                notice.textContent = 'Pre-filled with master administrator credentials';
+            } else if (role === 'STAFF') {
+                modalTitle.textContent = '🧺 Laundry Staff Login';
+                emailField.value = 'laundrystaff@stitchtrack.com';
+                passField.value = 'laundry@staff123';
+                notice.textContent = 'Pre-filled with laundry counter desk credentials';
+            } else {
+                modalTitle.textContent = '🎓 Student Portal Access';
+                emailField.value = 'student@campus.edu';
+                passField.value = '••••••••';
+                notice.textContent = 'Enter student university email or roll number';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeDemo() {
+            document.getElementById('demoModal').style.display = 'none';
+        }
+
+        function handlePortalSubmit(e) {
+            e.preventDefault();
+            const role = document.getElementById('modalRoleField').value;
+            alert('Verified credentials for ' + role + '. Connecting to StitchTrack Tomcat Application Server.');
+            closeDemo();
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('demoModal');
+            if (event.target === modal) {
+                closeDemo();
+            }
+        };
+    </script>
+</body>
+</html>
