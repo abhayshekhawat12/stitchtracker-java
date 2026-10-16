@@ -7,6 +7,19 @@ List<LaundryOrder> orders=(List<LaundryOrder>)request.getAttribute("orders");
 List<RenewalRequest> renewals=(List<RenewalRequest>)request.getAttribute("renewals");
 List<Complaint> complaints=(List<Complaint>)request.getAttribute("complaints");
 List<AuditLog> logs=(List<AuditLog>)request.getAttribute("auditLogs");
+List<SubscriptionTransaction> subTransactions=(List<SubscriptionTransaction>)request.getAttribute("subTransactions");
+if(subTransactions == null) subTransactions = Collections.emptyList();
+int totalSubRevenue = 0;
+int totalSubCredits = 0;
+long pendingSubCount = 0;
+for(SubscriptionTransaction stx : subTransactions) {
+    if("SUCCESS".equals(stx.getPaymentStatus())) {
+        totalSubRevenue += stx.getAmountInr();
+        totalSubCredits += stx.getClothesCredited();
+    } else if("PENDING_VERIFICATION".equals(stx.getPaymentStatus())) {
+        pendingSubCount++;
+    }
+}
 String flash=(String)session.getAttribute("flash"),ft=(String)session.getAttribute("flashType");
 session.removeAttribute("flash");session.removeAttribute("flashType");
 
@@ -71,6 +84,7 @@ if(tab == null) tab = "overview";
             <a href="?tab=staff" class="<%= "staff".equals(tab) ? "active" : "" %>">Staff</a>
             <a href="?tab=renewals" class="<%= "renewals".equals(tab) ? "active" : "" %>">Renewals</a>
             <a href="?tab=complaints" class="<%= "complaints".equals(tab) ? "active" : "" %>">Issues</a>
+            <a href="?tab=subscriptions" class="<%= "subscriptions".equals(tab) ? "active" : "" %>">💳 Subscriptions<% if(pendingSubCount > 0) { %><span class="badge" style="background:#ef4444;color:white;border-radius:999px;padding:2px 7px;font-size:0.75rem;margin-left:4px;font-weight:700;"><%=pendingSubCount%></span><% } %></a>
             <a href="${pageContext.request.contextPath}/admin/scanner">Pickup Scanner</a>
             <a href="${pageContext.request.contextPath}/admin/export.csv">CSV</a>
             <a href="${pageContext.request.contextPath}/logout">Logout</a>
@@ -109,6 +123,11 @@ if(tab == null) tab = "overview";
             <article class="card clickable" onclick="location.href='?tab=complaints'" style="cursor:pointer;" title="View open issues">
                 <span>Open Issues</span>
                 <strong><%=complaints != null ? complaints.stream().filter(c->"Unresolved".equals(c.getStatus())).count() : 0%></strong>
+            </article>
+            <article class="card clickable" onclick="location.href='?tab=subscriptions'" style="cursor:pointer;" title="View subscriptions & revenue">
+                <span>Sub Revenue</span>
+                <strong style="color:var(--blue);">₹<%=totalSubRevenue%></strong>
+                <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;"><%=subTransactions.size()%> transactions &bull; <%=totalSubCredits%> credits</div>
             </article>
         </section>
 
@@ -716,6 +735,223 @@ if(tab == null) tab = "overview";
                     const q = e.target.value.toLowerCase();
                     document.querySelectorAll('.hist-row').forEach(r => {
                         r.style.display = Array.from(r.querySelectorAll('.hist-text')).some(el => el.textContent.toLowerCase().includes(q)) ? '' : 'none';
+                    });
+                });
+            </script>
+        </section>
+        <% } %>
+
+        <% if("subscriptions".equals(tab)) { 
+            int paidCount = 0;
+            int freeCount = 0;
+            List<SubscriptionTransaction> pendingSubList = new ArrayList<>();
+            for(SubscriptionTransaction t : subTransactions) {
+                if("SUCCESS".equals(t.getPaymentStatus())) paidCount++;
+                else if("FREE".equals(t.getPaymentStatus())) freeCount++;
+                else if("PENDING_VERIFICATION".equals(t.getPaymentStatus())) pendingSubList.add(t);
+            }
+        %>
+        <section id="subscriptions-view">
+            <div class="section-head" style="margin-bottom:1rem;">
+                <div>
+                    <h3 style="margin:0;">💳 Student Subscriptions & UPI Credit Requests</h3>
+                    <p class="muted" style="margin:4px 0 0 0;">Verify student UPI payments, approve quota top-ups, and track subscription history.</p>
+                </div>
+                <input type="text" id="subSearch" placeholder="🔍 Search student, roll, ref, UTR..." style="width:280px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;">
+            </div>
+
+            <div class="cards" style="margin-bottom:1.5rem;">
+                <article class="card">
+                    <span>Pending Verifications</span>
+                    <strong style="color:<%=!pendingSubList.isEmpty() ? "#ef4444" : "var(--muted)"%>;"><%=pendingSubList.size()%></strong>
+                    <small><%=!pendingSubList.isEmpty() ? "Requires admin action" : "All caught up" %></small>
+                </article>
+                <article class="card">
+                    <span>Total Revenue</span>
+                    <strong style="color:var(--ok);">₹<%=totalSubRevenue%></strong>
+                    <small><%=paidCount%> verified purchases</small>
+                </article>
+                <article class="card">
+                    <span>Credits Issued</span>
+                    <strong style="color:var(--blue);"><%=totalSubCredits%></strong>
+                    <small>From paid top-up packs</small>
+                </article>
+                <article class="card">
+                    <span>Free Starter Grants</span>
+                    <strong><%=freeCount%></strong>
+                    <small>50 free clothes per student</small>
+                </article>
+            </div>
+
+            <!-- Priority Queue: Pending UPI Payment Verifications -->
+            <% if(!pendingSubList.isEmpty()) { %>
+            <div style="background:#fffbeb;border:2px solid #fde68a;border-radius:16px;padding:20px;margin-bottom:2rem;box-shadow:0 4px 12px rgba(245,158,11,0.08);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <div>
+                        <h4 style="margin:0;color:#92400e;font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+                            <span>⚠️</span> Pending UPI Verification Requests (<%=pendingSubList.size()%>)
+                        </h4>
+                        <small style="color:#b45309;">Verify the UTR number / screenshot and click Approve to credit the student's laundry quota.</small>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table style="background:#fff;">
+                        <thead>
+                            <tr style="background:#fef3c7;">
+                                <th>Student</th>
+                                <th>Pack Requested</th>
+                                <th>Amount</th>
+                                <th>UTR / Ref Number</th>
+                                <th>Payment Proof</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for(SubscriptionTransaction ptx : pendingSubList) { 
+                                String proofUrl = ptx.getPaymentScreenshot();
+                                if(proofUrl != null && !proofUrl.startsWith("http")) {
+                                    proofUrl = request.getContextPath() + "/" + proofUrl;
+                                }
+                            %>
+                            <tr>
+                                <td>
+                                    <strong><%=ptx.getStudentName() != null ? ptx.getStudentName() : "Student #" + ptx.getStudentId()%></strong><br>
+                                    <small class="muted">Roll: <%=ptx.getStudentRoll() != null ? ptx.getStudentRoll() : "-"%></small>
+                                </td>
+                                <td>
+                                    <strong><%=ptx.getPlanName()%></strong><br>
+                                    <span style="color:var(--ok);font-size:0.85rem;font-weight:700;">+<%=ptx.getClothesCredited()%> credits</span>
+                                </td>
+                                <td>
+                                    <strong style="font-size:1.1rem;color:var(--ink);">₹<%=ptx.getAmountInr()%></strong>
+                                </td>
+                                <td>
+                                    <code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:0.9rem;font-weight:700;color:var(--blue);"><%=ptx.getUtrNumber() != null ? ptx.getUtrNumber() : ptx.getTransactionRef()%></code><br>
+                                    <small class="muted"><%=ptx.getCreatedAt()%></small>
+                                </td>
+                                <td>
+                                    <% if(proofUrl != null && !proofUrl.isBlank()) { %>
+                                        <a href="<%=proofUrl%>" target="_blank" class="button secondary" style="padding:6px 12px;font-size:0.8rem;display:inline-flex;align-items:center;gap:6px;">
+                                            🖼️ View Screenshot &nearr;
+                                        </a>
+                                    <% } else { %>
+                                        <small class="muted">No file uploaded</small>
+                                    <% } %>
+                                </td>
+                                <td style="text-align:right;white-space:nowrap;">
+                                    <form method="post" action="${pageContext.request.contextPath}/admin/action" style="display:inline;margin:0;">
+                                        <input type="hidden" name="action" value="approve-sub">
+                                        <input type="hidden" name="tab" value="subscriptions">
+                                        <input type="hidden" name="txId" value="<%=ptx.getId()%>">
+                                        <button class="button primary" style="background:#10b981;border-color:#10b981;padding:7px 14px;font-size:0.85rem;"
+                                                onclick="return confirm('Approve payment of ₹<%=ptx.getAmountInr()%> and add <%=ptx.getClothesCredited()%> credits to student <%=ptx.getStudentName()%>?');">
+                                            ✓ Approve & Credit
+                                        </button>
+                                    </form>
+                                    <form method="post" action="${pageContext.request.contextPath}/admin/action" style="display:inline;margin:0 0 0 6px;">
+                                        <input type="hidden" name="action" value="reject-sub">
+                                        <input type="hidden" name="tab" value="subscriptions">
+                                        <input type="hidden" name="txId" value="<%=ptx.getId()%>">
+                                        <button class="button secondary" style="color:#ef4444;border-color:#ef4444;padding:7px 12px;font-size:0.85rem;"
+                                                onclick="return confirm('Reject this subscription request?');">
+                                            ✕ Reject
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- All Transactions History -->
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ref / Date</th>
+                            <th>Student</th>
+                            <th>Pack</th>
+                            <th>Amount</th>
+                            <th>Credits Added</th>
+                            <th>Status</th>
+                            <th>UTR / Proof / Info</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if(subTransactions.isEmpty()) { %>
+                            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">No subscription transactions recorded yet.</td></tr>
+                        <% } %>
+                        <% for(SubscriptionTransaction tx : subTransactions) { 
+                            String stBadge = "#eff6ff;color:#1e40af;";
+                            String stText = tx.getPaymentStatus();
+                            if("SUCCESS".equals(tx.getPaymentStatus())) {
+                                stBadge = "background:#e5f5e9;color:#0d652d;";
+                                stText = "✓ SUCCESS";
+                            } else if("FREE".equals(tx.getPaymentStatus())) {
+                                stBadge = "background:#eff6ff;color:#2563eb;";
+                                stText = "🎁 FREE STARTER";
+                            } else if("REJECTED".equals(tx.getPaymentStatus()) || "FAILED".equals(tx.getPaymentStatus())) {
+                                stBadge = "background:#fde8e7;color:#b3261e;";
+                                stText = "✕ REJECTED";
+                            } else if("PENDING_VERIFICATION".equals(tx.getPaymentStatus())) {
+                                stBadge = "background:#fef3c7;color:#92400e;";
+                                stText = "⏳ PENDING VERIFICATION";
+                            }
+                            String proofUrl = tx.getPaymentScreenshot();
+                            if(proofUrl != null && !proofUrl.startsWith("http")) {
+                                proofUrl = request.getContextPath() + "/" + proofUrl;
+                            }
+                        %>
+                        <tr class="sub-row">
+                            <td class="sub-text">
+                                <strong><%=tx.getTransactionRef()%></strong><br>
+                                <small class="muted"><%=tx.getCreatedAt()%></small>
+                            </td>
+                            <td class="sub-text">
+                                <strong><%=tx.getStudentName() != null ? tx.getStudentName() : "Student #" + tx.getStudentId()%></strong><br>
+                                <small class="muted">Roll: <%=tx.getStudentRoll() != null ? tx.getStudentRoll() : "-"%></small>
+                            </td>
+                            <td class="sub-text">
+                                <span class="pill" style="background:#f1f5f9;color:var(--ink);"><%=tx.getPlanName() != null ? tx.getPlanName() : "Plan #" + tx.getPlanId()%></span>
+                            </td>
+                            <td>
+                                <strong><%=tx.getAmountInr() == 0 ? "₹0 (Free)" : "₹" + tx.getAmountInr()%></strong>
+                            </td>
+                            <td>
+                                <strong style="color:var(--ok);">+<%=tx.getClothesCredited()%></strong> credits
+                            </td>
+                            <td>
+                                <span class="pill" style="<%=stBadge%>font-weight:700;"><%=stText%></span>
+                            </td>
+                            <td class="sub-text">
+                                <% if(tx.getUtrNumber() != null && !tx.getUtrNumber().isBlank()) { %>
+                                    <small>UTR: <b><%=tx.getUtrNumber()%></b></small><br>
+                                <% } %>
+                                <% if(proofUrl != null && !proofUrl.isBlank()) { %>
+                                    <a href="<%=proofUrl%>" target="_blank" style="color:var(--blue);font-size:0.8rem;text-decoration:underline;">🖼️ View Screenshot</a>
+                                <% } else if("FREE".equals(tx.getPaymentStatus())) { %>
+                                    <small class="muted">Auto-credited on first login</small>
+                                <% } else if(tx.getRazorpayPaymentId() != null && !tx.getRazorpayPaymentId().isBlank()) { %>
+                                    <small class="muted">PayID: <%=tx.getRazorpayPaymentId()%></small>
+                                <% } else { %>
+                                    <small class="muted">-</small>
+                                <% } %>
+                            </td>
+                        </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+
+            <script>
+                document.getElementById('subSearch')?.addEventListener('input', function(e) {
+                    const q = e.target.value.toLowerCase();
+                    document.querySelectorAll('.sub-row').forEach(r => {
+                        r.style.display = Array.from(r.querySelectorAll('.sub-text')).some(el => el.textContent.toLowerCase().includes(q)) ? '' : 'none';
                     });
                 });
             </script>

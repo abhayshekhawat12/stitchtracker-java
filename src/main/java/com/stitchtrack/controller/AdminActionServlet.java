@@ -5,6 +5,7 @@ public class AdminActionServlet extends HttpServlet {
     private final UserDAO users = new UserDAO();
     private final LaundryDAO laundry = new LaundryDAO();
     private final SupportDAO support = new SupportDAO();
+    private final SubscriptionDAO subDao = new SubscriptionDAO();
     private final SecureRandom random = new SecureRandom();
 
     protected void doPost(HttpServletRequest r, HttpServletResponse s) throws IOException {
@@ -53,6 +54,21 @@ public class AdminActionServlet extends HttpServlet {
                 }
                 case "renewal" -> support.resolveRenewal(ServletUtil.longParam(r, "requestId"), Boolean.parseBoolean(r.getParameter("approve")), r.getParameter("notes"));
                 case "complaint" -> support.resolveComplaint(ServletUtil.longParam(r, "complaintId"), r.getParameter("notes"));
+                case "approve-sub" -> {
+                    long txId = ServletUtil.longParam(r, "txId");
+                    boolean ok = subDao.approveTransaction(txId, admin.getId());
+                    if (ok) {
+                        ServletUtil.flash(r, "success", "✅ Subscription approved! Clothes quota has been added to student's account.");
+                    } else {
+                        ServletUtil.flash(r, "error", "Transaction could not be approved or was already processed.");
+                    }
+                }
+                case "reject-sub" -> {
+                    long txId = ServletUtil.longParam(r, "txId");
+                    String reason = r.getParameter("reason");
+                    subDao.rejectTransaction(txId, admin.getId(), reason);
+                    ServletUtil.flash(r, "success", "Subscription payment request marked as rejected.");
+                }
                 default -> throw new IllegalArgumentException("Unknown action: " + a);
             }
             support.audit(admin.getId(), admin.getRole(), "Admin Action", a, r.getRemoteAddr());

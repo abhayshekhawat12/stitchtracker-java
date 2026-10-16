@@ -39,6 +39,7 @@
         <nav>
             <a href="${pageContext.request.contextPath}/student/dashboard">Dashboard</a>
             <a href="${pageContext.request.contextPath}/student/new-request">New Request</a>
+            <a href="${pageContext.request.contextPath}/student/subscription" style="display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--blue);">⚡ Subscription</a>
             <a href="${pageContext.request.contextPath}/student/notifications" class="bell-wrapper" style="text-decoration:none;">
                 🔔
                 <% if(unreadCount > 0) { %><div class="bell-badge"><%=unreadCount%></div><% } %>
@@ -57,25 +58,34 @@
                 <h2><%=u.getName()%></h2>
                 <p>Roll: <%=u.getRollNumber()%> &middot; <%=u.getHostel()%> / <%=u.getRoomNo()%></p>
             </div>
-            <% if ("Approved".equals(u.getVerificationStatus())) { %>
-                <a class="button primary" href="${pageContext.request.contextPath}/student/new-request">+ New Laundry Request</a>
-            <% } else { %>
-                <button class="button primary" style="opacity: 0.5;" disabled>Account Pending Verification</button>
-            <% } %>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a class="button secondary" href="${pageContext.request.contextPath}/student/subscription" style="display:inline-flex;align-items:center;gap:6px;">💳 Plans & Credits</a>
+                <% if ("Approved".equals(u.getVerificationStatus())) { %>
+                    <a class="button primary" href="${pageContext.request.contextPath}/student/new-request">+ New Laundry Request</a>
+                <% } else { %>
+                    <button class="button primary" style="opacity: 0.5;" disabled>Account Pending Verification</button>
+                <% } %>
+            </div>
         </section>
         
         <section class="cards">
             <article class="card">
-                <span>Laundry Quota</span>
-                <strong><%=u.getMembershipUsed()%> / <%=u.getMembershipLimit()%></strong>
+                <span>Laundry Credit Balance</span>
+                <strong><%=u.getMembershipUsed()%> / <%=u.getMembershipLimit()%> <span style="font-size:0.85rem;font-weight:normal;color:var(--muted);">credits</span></strong>
                 <div class="progress">
                     <i style="width:<%=Math.min(100,(u.getMembershipUsed()*100/Math.max(1,u.getMembershipLimit())))%>%"></i>
                 </div>
-                <small><%=u.getCreditsLeft()%> items remaining</small>
-                <form method="post" action="${pageContext.request.contextPath}/student/support">
-                    <input type="hidden" name="action" value="renewal">
-                    <button class="linkbtn">Request quota renewal</button>
-                </form>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                    <small><strong><%=u.getCreditsLeft()%></strong> credits available</small>
+                    <span style="font-size:0.75rem;color:var(--muted);background:#f1f5f9;padding:2px 8px;border-radius:10px;">Large items = 3 credits</span>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <a href="${pageContext.request.contextPath}/student/subscription" class="button primary" style="padding:6px 14px;font-size:0.82rem;text-decoration:none;">+ Top-up Credits</a>
+                    <form method="post" action="${pageContext.request.contextPath}/student/support" style="margin:0;">
+                        <input type="hidden" name="action" value="renewal">
+                        <button class="linkbtn" style="font-size:0.8rem;">Emergency quota</button>
+                    </form>
+                </div>
             </article>
             <article class="card">
                 <span>Account Status</span>
@@ -127,6 +137,7 @@
                     <div class="order-meta">
                         <span>Bag ID: <b><%=o.getBagNumber()==null?"Pending":o.getBagNumber()%></b></span>
                         <span><b><%=o.getTotalItems()%></b> items</span>
+                        <span>Credits: <b><%=o.getTotalCredits() > 0 ? o.getTotalCredits() : o.getTotalItems()%></b></span>
                         <span>Stage: <b><%=o.getCurrentStage()%></b></span>
                     </div>
                     

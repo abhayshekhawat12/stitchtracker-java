@@ -41,7 +41,7 @@ public class UserDAO {
     }
 
     public long registerStudent(User u, String rawPassword) throws SQLException {
-        String sql="INSERT INTO users(name,roll_number,email,phone,hostel,room_no,password_hash,gender,membership_limit,membership_used,quota_reset_date,account_status,verification_status,role,profile_photo,id_card) VALUES(?,?,?,?,?,?,?,?,200,0,DATE_ADD(CURDATE(),INTERVAL 120 DAY),'Pending Verification','Pending','STUDENT',?,?)";
+        String sql="INSERT INTO users(name,roll_number,email,phone,hostel,room_no,password_hash,gender,membership_limit,membership_used,quota_reset_date,account_status,verification_status,role,profile_photo,id_card) VALUES(?,?,?,?,?,?,?,?,0,0,DATE_ADD(CURDATE(),INTERVAL 120 DAY),'Pending Verification','Pending','STUDENT',?,?)";
         try(Connection c=DBConnection.getConnection(); PreparedStatement p=c.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS)){
             p.setString(1,u.getName());p.setString(2,u.getRollNumber());p.setString(3,u.getEmail());p.setString(4,u.getPhone());p.setString(5,u.getHostel());p.setString(6,u.getRoomNo());p.setString(7,BCrypt.hashpw(rawPassword,BCrypt.gensalt(10)));p.setString(8,u.getGender());
             p.setString(9,u.getProfilePhoto()); p.setString(10,u.getIdCard());

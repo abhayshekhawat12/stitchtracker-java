@@ -8,6 +8,7 @@ public class LaundryOrder {
     private long id, studentId;
     private String orderNumber, studentName, studentRoll, studentPhone, bagNumber, qrToken, qrStatus, status, currentStage;
     private int totalItems;
+    private int totalCredits;
     private Timestamp createdAt, estimatedCompletion, deliveredAt;
     private final Map<String,Integer> items = new LinkedHashMap<>();
     public long getId(){return id;} public void setId(long v){id=v;}
@@ -22,6 +23,7 @@ public class LaundryOrder {
     public String getStatus(){return status;} public void setStatus(String v){status=v;}
     public String getCurrentStage(){return currentStage;} public void setCurrentStage(String v){currentStage=v;}
     public int getTotalItems(){return totalItems;} public void setTotalItems(int v){totalItems=v;}
+    public int getTotalCredits(){return totalCredits;} public void setTotalCredits(int v){totalCredits=v;}
     public Timestamp getCreatedAt(){return createdAt;} public void setCreatedAt(Timestamp v){createdAt=v;}
     public Timestamp getEstimatedCompletion(){return estimatedCompletion;} public void setEstimatedCompletion(Timestamp v){estimatedCompletion=v;}
     public Timestamp getDeliveredAt(){return deliveredAt;} public void setDeliveredAt(Timestamp v){deliveredAt=v;}

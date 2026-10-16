@@ -94,6 +94,9 @@ public final class DBConnection {
             // Initialize database tables if not existing
             autoBootstrapSchema();
 
+            // Initialize subscription tables
+            com.stitchtrack.dao.SubscriptionDAO.ensureSchema();
+
         } catch (Exception e) {
             logger.error("Failed to initialize database connection pool", e);
             throw new ExceptionInInitializerError(e);
@@ -128,7 +131,7 @@ public final class DBConnection {
                   room_no VARCHAR(30),
                   password_hash VARCHAR(100) NOT NULL,
                   gender VARCHAR(20),
-                  membership_limit INT NOT NULL DEFAULT 200,
+                  membership_limit INT NOT NULL DEFAULT 0,
                   membership_used INT NOT NULL DEFAULT 0,
                   quota_reset_date DATE,
                   account_status VARCHAR(40) NOT NULL DEFAULT 'Pending Verification',
@@ -151,6 +154,7 @@ public final class DBConnection {
                   qr_token VARCHAR(120) UNIQUE,
                   qr_status VARCHAR(20) NOT NULL DEFAULT 'none',
                   total_items INT NOT NULL DEFAULT 0,
+                  total_credits INT NOT NULL DEFAULT 0,
                   scale_weight_kg DECIMAL(5,2),
                   status VARCHAR(40) NOT NULL DEFAULT 'Pending Approval',
                   current_stage VARCHAR(60) NOT NULL DEFAULT 'Pending Approval',
@@ -169,6 +173,8 @@ public final class DBConnection {
                   order_id BIGINT NOT NULL,
                   category VARCHAR(60) NOT NULL,
                   item_count INT NOT NULL DEFAULT 0,
+                  credit_rate INT NOT NULL DEFAULT 1,
+                  credits_consumed INT NOT NULL DEFAULT 0,
                   INDEX idx_item_order(order_id)
                 )
             """);
@@ -238,6 +244,13 @@ public final class DBConnection {
                 INSERT IGNORE INTO users(name, roll_number, email, password_hash, hostel, room_no, membership_limit, membership_used, account_status, verification_status, role)
                 VALUES ('Laundry Staff','STAFF-02','laundrystaff@stitchtrack.com','$2a$12$H1PlJ/Tu.hjuUrTiqS9LwOikMCgGqLkrsK8V5u2FfsrJc3MONg.b.','Laundry Room','Counter-1',9999,0,'Active','Approved','STAFF')
             """);
+
+            // Safely add credit columns to existing tables (ALTER IF NOT EXISTS – MySQL 8.0.3+)
+            try { s.execute("ALTER TABLE laundry_orders ADD COLUMN IF NOT EXISTS total_credits INT NOT NULL DEFAULT 0"); } catch(Exception ignored){}
+            try { s.execute("ALTER TABLE laundry_items ADD COLUMN IF NOT EXISTS credit_rate INT NOT NULL DEFAULT 1"); } catch(Exception ignored){}
+            try { s.execute("ALTER TABLE laundry_items ADD COLUMN IF NOT EXISTS credits_consumed INT NOT NULL DEFAULT 0"); } catch(Exception ignored){}
+            // Safely add free_quota_assigned column
+            try { s.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS free_quota_assigned TINYINT(1) NOT NULL DEFAULT 0"); } catch(Exception ignored){}
 
             logger.info("Database schema verification and bootstrap completed successfully.");
         } catch (Exception e) {
