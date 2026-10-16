@@ -20,6 +20,7 @@ public class AdminDashboardServlet extends HttpServlet {
             List<LaundryOrder> pendingOrders = orders.stream().filter(LaundryOrder::isPendingApproval).toList();
             r.setAttribute("students", users.findAllStudents());
             r.setAttribute("staffList", users.findAllStaff());
+            r.setAttribute("allUsers", users.findAllUsers());
             r.setAttribute("orders", orders);
             r.setAttribute("pendingOrders", pendingOrders);
             r.setAttribute("renewals", support.renewals());

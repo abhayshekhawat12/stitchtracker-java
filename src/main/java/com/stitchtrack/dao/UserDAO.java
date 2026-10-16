@@ -60,6 +60,35 @@ public class UserDAO {
         }
     }
 
+    public boolean updatePassword(long userId, String newRawPassword) throws SQLException {
+        String sql = "UPDATE users SET password_hash=? WHERE id=?";
+        try(Connection c = DBConnection.getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
+            p.setString(1, BCrypt.hashpw(newRawPassword, BCrypt.gensalt(10)));
+            p.setLong(2, userId);
+            return p.executeUpdate() > 0;
+        }
+    }
+
+    public boolean verifyPassword(long userId, String rawPassword) throws SQLException {
+        String sql = "SELECT password_hash FROM users WHERE id=?";
+        try(Connection c = DBConnection.getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
+            p.setLong(1, userId);
+            try(ResultSet r = p.executeQuery()) {
+                if(!r.next()) return false;
+                String hash = r.getString("password_hash");
+                return hash != null && BCrypt.checkpw(rawPassword, hash);
+            }
+        }
+    }
+
+    public List<User> findAllUsers() throws SQLException {
+        List<User> list = new ArrayList<>();
+        try(Connection c = DBConnection.getConnection(); PreparedStatement p = c.prepareStatement(BASE + " ORDER BY role ASC, name ASC"); ResultSet r = p.executeQuery()) {
+            while(r.next()) list.add(map(r));
+        }
+        return list;
+    }
+
     public void setVerification(long id, boolean approve) throws SQLException {
         String sql="UPDATE users SET account_status=?, verification_status=? WHERE id=? AND role IN ('STUDENT','STAFF')";
         try(Connection c=DBConnection.getConnection(); PreparedStatement p=c.prepareStatement(sql)){p.setString(1,approve?"Active":"Inactive");p.setString(2,approve?"Approved":"Rejected");p.setLong(3,id);p.executeUpdate();}
@@ -69,3 +98,4 @@ public class UserDAO {
         User u=new User();u.setId(r.getLong("id"));u.setName(r.getString("name"));u.setRollNumber(r.getString("roll_number"));u.setEmail(r.getString("email"));u.setPhone(r.getString("phone"));u.setHostel(r.getString("hostel"));u.setRoomNo(r.getString("room_no"));u.setGender(r.getString("gender"));u.setMembershipLimit(r.getInt("membership_limit"));u.setMembershipUsed(r.getInt("membership_used"));java.sql.Date d=r.getDate("quota_reset_date");if(d!=null)u.setQuotaResetDate(d.toLocalDate());u.setAccountStatus(r.getString("account_status"));u.setVerificationStatus(r.getString("verification_status"));u.setRenewalStatus(r.getString("renewal_status"));u.setRole(r.getString("role"));u.setProfilePhoto(r.getString("profile_photo"));u.setIdCard(r.getString("id_card"));u.setCreatedAt(r.getTimestamp("created_at"));return u;
     }
 }
+

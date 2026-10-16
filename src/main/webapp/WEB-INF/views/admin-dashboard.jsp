@@ -3,6 +3,8 @@
 <% 
 List<User> students=(List<User>)request.getAttribute("students");
 List<User> staffList=(List<User>)request.getAttribute("staffList");
+List<User> allUsers=(List<User>)request.getAttribute("allUsers");
+if(allUsers == null) allUsers = Collections.emptyList();
 List<LaundryOrder> orders=(List<LaundryOrder>)request.getAttribute("orders");
 List<RenewalRequest> renewals=(List<RenewalRequest>)request.getAttribute("renewals");
 List<Complaint> complaints=(List<Complaint>)request.getAttribute("complaints");
@@ -85,6 +87,7 @@ if(tab == null) tab = "overview";
             <a href="?tab=renewals" class="<%= "renewals".equals(tab) ? "active" : "" %>">Renewals</a>
             <a href="?tab=complaints" class="<%= "complaints".equals(tab) ? "active" : "" %>">Issues</a>
             <a href="?tab=subscriptions" class="<%= "subscriptions".equals(tab) ? "active" : "" %>">💳 Subscriptions<% if(pendingSubCount > 0) { %><span class="badge" style="background:#ef4444;color:white;border-radius:999px;padding:2px 7px;font-size:0.75rem;margin-left:4px;font-weight:700;"><%=pendingSubCount%></span><% } %></a>
+            <a href="?tab=settings" class="<%= "settings".equals(tab) ? "active" : "" %>">⚙️ Settings</a>
             <a href="${pageContext.request.contextPath}/admin/scanner">Pickup Scanner</a>
             <a href="${pageContext.request.contextPath}/admin/export.csv">CSV</a>
             <a href="${pageContext.request.contextPath}/logout">Logout</a>
@@ -551,16 +554,21 @@ if(tab == null) tab = "overview";
                             <% } %>
                         </td>
                         <td>
-                            <% if(st.getVerificationStatus() == null || "Pending".equals(st.getVerificationStatus())) { %>
-                            <form method="post" action="${pageContext.request.contextPath}/admin/action" class="inline">
-                                <input type="hidden" name="action" value="verify">
-                                <input type="hidden" name="studentId" value="<%=st.getId()%>">
-                                <button name="approve" value="true" class="primary small">Approve</button>
-                                <button name="approve" value="false" class="danger small">Reject</button>
-                            </form>
-                            <% } else { %>
-                                &mdash;
-                            <% } %>
+                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                <% if(st.getVerificationStatus() == null || "Pending".equals(st.getVerificationStatus())) { %>
+                                <form method="post" action="${pageContext.request.contextPath}/admin/action" class="inline" style="margin:0;">
+                                    <input type="hidden" name="action" value="verify">
+                                    <input type="hidden" name="studentId" value="<%=st.getId()%>">
+                                    <button name="approve" value="true" class="primary small">Approve</button>
+                                    <button name="approve" value="false" class="danger small">Reject</button>
+                                </form>
+                                <% } %>
+                                <button type="button" class="button small secondary"
+                                        onclick="openResetPasswordModal('<%=st.getId()%>', '<%=st.getName().replace("'", "\\'")%>', '<%=st.getRole()%>', '<%=st.getRollNumber()!=null?st.getRollNumber().replace("'", "\\'"):""%>', 'students')"
+                                        style="padding:4px 8px;font-size:0.75rem;">
+                                    🔑 Password
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     <%}%>
@@ -604,16 +612,21 @@ if(tab == null) tab = "overview";
                             <% } %>
                         </td>
                         <td>
-                            <% if(st.getVerificationStatus() == null || "Pending".equals(st.getVerificationStatus())) { %>
-                            <form method="post" action="${pageContext.request.contextPath}/admin/action" class="inline">
-                                <input type="hidden" name="action" value="verify">
-                                <input type="hidden" name="studentId" value="<%=st.getId()%>">
-                                <button name="approve" value="true" class="primary small">Approve</button>
-                                <button name="approve" value="false" class="danger small">Reject</button>
-                            </form>
-                            <% } else { %>
-                                &mdash;
-                            <% } %>
+                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                <% if(st.getVerificationStatus() == null || "Pending".equals(st.getVerificationStatus())) { %>
+                                <form method="post" action="${pageContext.request.contextPath}/admin/action" class="inline" style="margin:0;">
+                                    <input type="hidden" name="action" value="verify">
+                                    <input type="hidden" name="studentId" value="<%=st.getId()%>">
+                                    <button name="approve" value="true" class="primary small">Approve</button>
+                                    <button name="approve" value="false" class="danger small">Reject</button>
+                                </form>
+                                <% } %>
+                                <button type="button" class="button small secondary"
+                                        onclick="openResetPasswordModal('<%=st.getId()%>', '<%=st.getName().replace("'", "\\'")%>', '<%=st.getRole()%>', '<%=st.getRollNumber()!=null?st.getRollNumber().replace("'", "\\'"):""%>', 'staff')"
+                                        style="padding:4px 8px;font-size:0.75rem;">
+                                    🔑 Password
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     <%}%>
@@ -958,6 +971,182 @@ if(tab == null) tab = "overview";
         </section>
         <% } %>
 
+        <% if("settings".equals(tab)) { %>
+        <section id="settings" style="display:flex;flex-direction:column;gap:24px;">
+            <div class="section-head" style="margin-bottom:0;">
+                <div>
+                    <h3 style="margin:0;font-size:1.4rem;display:flex;align-items:center;gap:8px;">⚙️ System Security &amp; Password Settings</h3>
+                    <small class="muted">Change your personal Admin password or reset credentials for any Student, Staff, or Admin account.</small>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:20px;">
+                <!-- Card 1: Admin Own Password -->
+                <div class="card" style="padding:22px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                        <div style="width:38px;height:38px;border-radius:8px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:1.25rem;">🔒</div>
+                        <div>
+                            <h4 style="margin:0;font-size:1.1rem;color:#0f172a;">Change My Admin Password</h4>
+                            <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Requires your current active password for verification</p>
+                        </div>
+                    </div>
+
+                    <form method="post" action="${pageContext.request.contextPath}/admin/action" style="display:flex;flex-direction:column;gap:12px;">
+                        <input type="hidden" name="action" value="update-own-password">
+                        <input type="hidden" name="tab" value="settings">
+
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">Current Admin Password *</label>
+                            <input type="password" name="currentPassword" required placeholder="Enter your current password" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+                        </div>
+
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">New Password (Min 6 chars) *</label>
+                            <input type="password" name="newPassword" id="adminNewPw" required minlength="6" placeholder="At least 6 characters" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+                        </div>
+
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">Confirm New Password *</label>
+                            <input type="password" name="confirmPassword" id="adminConfirmPw" required minlength="6" placeholder="Re-type new password" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+                        </div>
+
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+                            <input type="checkbox" id="showAdminPwToggle" onchange="togglePwVisibility(['adminNewPw','adminConfirmPw'])" style="cursor:pointer;">
+                            <label for="showAdminPwToggle" style="font-size:0.8rem;color:#64748b;cursor:pointer;">Show passwords</label>
+                        </div>
+
+                        <button type="submit" class="button primary" style="margin-top:6px;padding:9px 16px;font-weight:600;border-radius:6px;">Update Admin Password</button>
+                    </form>
+                </div>
+
+                <!-- Card 2: Quick Reset User Password -->
+                <div class="card" style="padding:22px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                        <div style="width:38px;height:38px;border-radius:8px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.25rem;">⚡</div>
+                        <div>
+                            <h4 style="margin:0;font-size:1.1rem;color:#0f172a;">Quick Password Reset</h4>
+                            <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Directly reset password for any student, staff, or admin</p>
+                        </div>
+                    </div>
+
+                    <form method="post" action="${pageContext.request.contextPath}/admin/action" style="display:flex;flex-direction:column;gap:12px;">
+                        <input type="hidden" name="action" value="reset-user-password">
+                        <input type="hidden" name="tab" value="settings">
+
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">Select Target Account *</label>
+                            <select name="targetUserId" required style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;background:white;">
+                                <option value="">-- Choose Account to Reset --</option>
+                                <optgroup label="👨‍💼 Administrators">
+                                    <% for(User u : allUsers) { if("ADMIN".equals(u.getRole())) { %>
+                                        <option value="<%=u.getId()%>">[ADMIN] <%=u.getName()%> (<%=u.getEmail()%>)</option>
+                                    <% }} %>
+                                </optgroup>
+                                <optgroup label="👔 Staff Members">
+                                    <% for(User u : allUsers) { if("STAFF".equals(u.getRole())) { %>
+                                        <option value="<%=u.getId()%>">[STAFF] <%=u.getName()%> - <%=u.getRollNumber()!=null?u.getRollNumber():""%> (<%=u.getEmail()%>)</option>
+                                    <% }} %>
+                                </optgroup>
+                                <optgroup label="🎓 Students">
+                                    <% for(User u : allUsers) { if("STUDENT".equals(u.getRole())) { %>
+                                        <option value="<%=u.getId()%>">[STUDENT] <%=u.getName()%> - <%=u.getRollNumber()%> (<%=u.getEmail()%>)</option>
+                                    <% }} %>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">New Password (Min 6 chars) *</label>
+                            <input type="password" name="newPassword" id="quickNewPw" required minlength="6" placeholder="Enter new password" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+                        </div>
+
+                        <div>
+                            <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">Confirm New Password *</label>
+                            <input type="password" name="confirmPassword" id="quickConfirmPw" required minlength="6" placeholder="Re-type new password" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+                        </div>
+
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+                            <input type="checkbox" id="showQuickPwToggle" onchange="togglePwVisibility(['quickNewPw','quickConfirmPw'])" style="cursor:pointer;">
+                            <label for="showQuickPwToggle" style="font-size:0.8rem;color:#64748b;cursor:pointer;">Show passwords</label>
+                        </div>
+
+                        <button type="submit" class="button primary" style="margin-top:6px;padding:9px 16px;font-weight:600;border-radius:6px;background:#d97706;border-color:#b45309;">Reset Account Password</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Section 3: All Accounts Table with Search & Instant Reset Action -->
+            <div class="card" style="padding:22px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                    <div>
+                        <h4 style="margin:0;font-size:1.15rem;color:#0f172a;">👥 All Registered Accounts Directory (<%=allUsers.size()%>)</h4>
+                        <p style="margin:2px 0 0;font-size:0.82rem;color:#64748b;">Browse, filter, and update passwords for any registered user.</p>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <div style="display:flex;gap:4px;">
+                            <button type="button" class="button small" onclick="filterAccountRole('ALL')" id="roleFilter-ALL" style="background:#0f172a;color:white;">All</button>
+                            <button type="button" class="button small secondary" onclick="filterAccountRole('STUDENT')" id="roleFilter-STUDENT">Students</button>
+                            <button type="button" class="button small secondary" onclick="filterAccountRole('STAFF')" id="roleFilter-STAFF">Staff</button>
+                            <button type="button" class="button small secondary" onclick="filterAccountRole('ADMIN')" id="roleFilter-ADMIN">Admins</button>
+                        </div>
+                        <input type="text" id="userAccountSearch" placeholder="🔍 Search name, roll, email..." style="padding:6px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;min-width:220px;">
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Name &amp; Email</th>
+                                <th>Roll / Staff ID</th>
+                                <th>Hostel / Room</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allUsersTbody">
+                            <% for(User u : allUsers) { 
+                                String roleBadgeBg = "ADMIN".equals(u.getRole()) ? "#fef3c7" : ("STAFF".equals(u.getRole()) ? "#eff6ff" : "#f1f5f9");
+                                String roleBadgeCol = "ADMIN".equals(u.getRole()) ? "#92400e" : ("STAFF".equals(u.getRole()) ? "#1d4ed8" : "#334155");
+                            %>
+                            <tr class="account-row" data-role="<%=u.getRole()%>">
+                                <td>
+                                    <span class="pill" style="background:<%=roleBadgeBg%>;color:<%=roleBadgeCol%>;font-weight:700;font-size:0.75rem;">
+                                        <%=u.getRole()%>
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong class="user-text"><%=u.getName()%></strong>
+                                    <small class="user-text" style="display:block;color:#64748b;"><%=u.getEmail()%></small>
+                                </td>
+                                <td class="user-text"><%=u.getRollNumber() != null ? u.getRollNumber() : "&mdash;"%></td>
+                                <td><%=u.getHostel() != null ? u.getHostel() + " / " + u.getRoomNo() : "&mdash;"%></td>
+                                <td>
+                                    <% if("Active".equalsIgnoreCase(u.getAccountStatus()) || "Approved".equalsIgnoreCase(u.getVerificationStatus())) { %>
+                                        <span class="pill" style="background:#e5f5e9;color:#0d652d;">Active</span>
+                                    <% } else if("Rejected".equalsIgnoreCase(u.getVerificationStatus())) { %>
+                                        <span class="pill" style="background:#fde8e7;color:#b3261e;">Rejected</span>
+                                    <% } else { %>
+                                        <span class="pill" style="background:#fef3c7;color:#b45309;">Pending</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button type="button" class="button small secondary"
+                                            onclick="openResetPasswordModal('<%=u.getId()%>', '<%=u.getName().replace("'", "\\'")%>', '<%=u.getRole()%>', '<%=u.getRollNumber()!=null?u.getRollNumber().replace("'", "\\'"):u.getEmail().replace("'", "\\'")%>', 'settings')"
+                                            style="padding:5px 10px;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;">
+                                        🔑 Update Password
+                                    </button>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <% } %>
+
         <% if("analytics".equals(tab)) { 
             int cRec=0, cSort=0, cWash=0, cDry=0, cIron=0, cReady=0;
             int sPend=0, sAct=0, sDel=0, sRej=0;
@@ -1063,6 +1252,115 @@ if(tab == null) tab = "overview";
             </script>
         </section>
         <% } %>
+
+        <!-- Universal Password Reset Modal -->
+        <div id="resetPasswordModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+            <div style="background:#ffffff;border-radius:12px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1);width:100%;max-width:440px;overflow:hidden;border:1px solid #e2e8f0;">
+                <div style="background:#0f172a;color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.2rem;">🔑</span>
+                        <h3 style="margin:0;font-size:1.1rem;color:white;" id="modalTargetTitle">Reset Account Password</h3>
+                    </div>
+                    <button type="button" onclick="closeResetPasswordModal()" style="background:transparent;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;line-height:1;padding:0;">&times;</button>
+                </div>
+                
+                <form method="post" action="${pageContext.request.contextPath}/admin/action" style="padding:20px;display:flex;flex-direction:column;gap:14px;margin:0;">
+                    <input type="hidden" name="action" value="reset-user-password">
+                    <input type="hidden" name="targetUserId" id="modalTargetUserId">
+                    <input type="hidden" name="tab" id="modalTargetTab" value="settings">
+
+                    <div style="background:#f8fafc;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;">
+                        <div style="font-size:0.75rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Target Account</div>
+                        <div style="font-size:0.95rem;font-weight:700;color:#0f172a;margin-top:2px;" id="modalTargetName">&mdash;</div>
+                        <div style="font-size:0.8rem;color:#475569;" id="modalTargetDetail">&mdash;</div>
+                    </div>
+
+                    <div>
+                        <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">New Password (Min 6 chars) *</label>
+                        <input type="password" name="newPassword" id="modalNewPw" required minlength="6" placeholder="Enter new password" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+                    </div>
+
+                    <div>
+                        <label style="display:block;font-size:0.82rem;font-weight:600;margin-bottom:4px;color:#334155;">Confirm New Password *</label>
+                        <input type="password" name="confirmPassword" id="modalConfirmPw" required minlength="6" placeholder="Re-type new password" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" id="modalShowPwToggle" onchange="togglePwVisibility(['modalNewPw','modalConfirmPw'])" style="cursor:pointer;">
+                        <label for="modalShowPwToggle" style="font-size:0.8rem;color:#64748b;cursor:pointer;">Show password</label>
+                    </div>
+
+                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+                        <button type="button" onclick="closeResetPasswordModal()" class="button secondary" style="padding:8px 16px;">Cancel</button>
+                        <button type="submit" class="button primary" style="padding:8px 18px;background:#2563eb;">Save New Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            function openResetPasswordModal(userId, userName, role, identifier, currentTab) {
+                document.getElementById('modalTargetUserId').value = userId;
+                document.getElementById('modalTargetName').textContent = userName + ' (' + role + ')';
+                document.getElementById('modalTargetDetail').textContent = identifier ? identifier : '';
+                document.getElementById('modalTargetTab').value = currentTab || 'settings';
+                document.getElementById('modalNewPw').value = '';
+                document.getElementById('modalConfirmPw').value = '';
+                document.getElementById('modalShowPwToggle').checked = false;
+                document.getElementById('modalNewPw').type = 'password';
+                document.getElementById('modalConfirmPw').type = 'password';
+                const m = document.getElementById('resetPasswordModal');
+                m.style.display = 'flex';
+            }
+
+            function closeResetPasswordModal() {
+                document.getElementById('resetPasswordModal').style.display = 'none';
+            }
+
+            function togglePwVisibility(ids) {
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) {
+                        el.type = el.type === 'password' ? 'text' : 'password';
+                    }
+                });
+            }
+
+            function filterAccountRole(role) {
+                ['ALL', 'STUDENT', 'STAFF', 'ADMIN'].forEach(r => {
+                    const btn = document.getElementById('roleFilter-' + r);
+                    if(btn) {
+                        if(r === role) {
+                            btn.style.background = '#0f172a';
+                            btn.style.color = '#ffffff';
+                        } else {
+                            btn.style.background = '#f1f5f9';
+                            btn.style.color = '#334155';
+                        }
+                    }
+                });
+                const searchVal = (document.getElementById('userAccountSearch')?.value || '').toLowerCase();
+                document.querySelectorAll('.account-row').forEach(row => {
+                    const matchesRole = (role === 'ALL' || row.getAttribute('data-role') === role);
+                    const matchesSearch = !searchVal || Array.from(row.querySelectorAll('.user-text')).some(el => el.textContent.toLowerCase().includes(searchVal));
+                    row.style.display = (matchesRole && matchesSearch) ? '' : 'none';
+                });
+            }
+
+            document.getElementById('userAccountSearch')?.addEventListener('input', function(e) {
+                const searchVal = e.target.value.toLowerCase();
+                let activeRole = 'ALL';
+                ['STUDENT', 'STAFF', 'ADMIN'].forEach(r => {
+                    const btn = document.getElementById('roleFilter-' + r);
+                    if(btn && btn.style.color === 'rgb(255, 255, 255)') activeRole = r;
+                });
+                document.querySelectorAll('.account-row').forEach(row => {
+                    const matchesRole = (activeRole === 'ALL' || row.getAttribute('data-role') === activeRole);
+                    const matchesSearch = !searchVal || Array.from(row.querySelectorAll('.user-text')).some(el => el.textContent.toLowerCase().includes(searchVal));
+                    row.style.display = (matchesRole && matchesSearch) ? '' : 'none';
+                });
+            });
+        </script>
 
     </main>
 </body>
