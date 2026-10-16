@@ -30,7 +30,7 @@ public class SubscriptionServlet extends HttpServlet {
     private final SubscriptionDAO subDao = new SubscriptionDAO();
     private final UserDAO userDAO = new UserDAO();
 
-    private static final String DEFAULT_UPI_ID = "stitchtrack@upi";
+    private static final String DEFAULT_UPI_ID = "8949690598@ybl";
     private static final String DEFAULT_UPI_NAME = "StitchTrack Facility";
 
     @Override

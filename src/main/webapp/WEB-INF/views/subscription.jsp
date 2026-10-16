@@ -6,7 +6,7 @@
     List<SubscriptionPlan> plans = (List<SubscriptionPlan>)request.getAttribute("plans");
     List<SubscriptionTransaction> txHistory = (List<SubscriptionTransaction>)request.getAttribute("txHistory");
     String upiId = (String)request.getAttribute("upiId");
-    if(upiId == null || upiId.isBlank()) upiId = "stitchtrack@upi";
+    if(upiId == null || upiId.isBlank()) upiId = "8949690598@ybl";
     String upiName = (String)request.getAttribute("upiName");
     if(upiName == null || upiName.isBlank()) upiName = "StitchTrack Facility";
 
@@ -442,16 +442,16 @@
 
             <!-- QR Code Section -->
             <div class="qr-wrapper">
-                <p style="margin:0 0 8px 0;font-size:0.85rem;font-weight:700;color:var(--muted);">SCAN WITH ANY UPI APP</p>
-                <img id="upiQrImage" src="" alt="UPI QR Code">
-                <div style="font-size:0.8rem;color:var(--muted);margin-top:8px;">GPay &bull; PhonePe &bull; Paytm &bull; BHIM &bull; Cred</div>
+                <p style="margin:0 0 8px 0;font-size:0.85rem;font-weight:700;color:var(--muted);">SCAN WITH ANY UPI APP (PHONEPE / GPAY / PAYTM)</p>
+                <img id="upiQrImage" src="${pageContext.request.contextPath}/assets/payment.jpg" alt="PhonePe UPI QR Code" style="max-width:240px;width:100%;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                <div style="font-size:0.85rem;color:var(--ink);font-weight:700;margin-top:10px;">PhonePe &bull; Google Pay &bull; Paytm &bull; BHIM</div>
             </div>
 
             <!-- UPI ID & Copy -->
             <div class="upi-copy-box">
                 <div>
                     <small style="display:block;color:var(--muted);font-size:0.75rem;">FACILITY UPI ID</small>
-                    <b id="upiIdText" style="color:var(--blue);"><%=upiId%></b>
+                    <b id="upiIdText" style="color:var(--blue);font-size:1.05rem;">8949690598@ybl</b>
                 </div>
                 <button type="button" class="copy-btn" id="copyBtn" onclick="copyUpiId()">📋 Copy</button>
             </div>
@@ -491,26 +491,14 @@
     </div>
 
     <script>
-        const UPI_ID = '<%=upiId%>';
-        const UPI_NAME = '<%=upiName.replace("'","")%>';
+        const UPI_ID = '8949690598@ybl';
+        const UPI_NAME = 'StitchTrack Facility';
 
         function openUpiModal(planId, planName, priceInr, clothes) {
             document.getElementById('formPlanId').value = planId;
             document.getElementById('modalPlanTitle').textContent = planName + ' (₹' + priceInr + ')';
             document.getElementById('modalPlanSub').textContent = '+' + clothes + ' clothes quota will be added';
             document.getElementById('modalAmountNotice').textContent = '₹' + priceInr;
-
-            // Generate UPI payment string
-            // upi://pay?pa=upiId&pn=upiName&am=priceInr&cu=INR&tn=StitchTrack_Plan
-            const upiString = 'upi://pay?pa=' + encodeURIComponent(UPI_ID) +
-                              '&pn=' + encodeURIComponent(UPI_NAME) +
-                              '&am=' + encodeURIComponent(priceInr) +
-                              '&cu=INR&tn=StitchTrack_' + encodeURIComponent(planName);
-
-            // Generate QR Code URL via QR server API
-            const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(upiString);
-            document.getElementById('upiQrImage').src = qrUrl;
-
             document.getElementById('upiModal').classList.add('active');
         }
 
