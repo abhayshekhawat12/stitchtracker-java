@@ -106,10 +106,12 @@ public final class DBConnection {
                     StringBuilder jdbcUrl = new StringBuilder("jdbc:mysql://").append(host).append(":").append(port).append("/").append(dbName);
                     jdbcUrl.append("?allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata");
                     if (!query.isBlank()) {
-                        jdbcUrl.append("&").append(query);
+                        String cleanQuery = query.replace("ssl-mode=", "sslMode=");
+                        jdbcUrl.append("&").append(cleanQuery);
                     } else {
                         jdbcUrl.append("&useSSL=true");
                     }
+                    jdbcUrl.append("&connectTimeout=7000&socketTimeout=10000");
                     config.setJdbcUrl(jdbcUrl.toString());
                 } catch (Exception ex) {
                     logger.warn("Could not parse URI formatted DB URL, using raw format: {}", dbUrl, ex);
@@ -127,7 +129,7 @@ public final class DBConnection {
                     if (dbName == null || dbName.isBlank()) dbName = "stitchtrack_java";
 
                     String constructed = "jdbc:mysql://" + host + ":" + port + "/" + dbName
-                            + "?allowPublicKeyRetrieval=true&useSSL=true&serverTimezone=Asia/Kolkata";
+                            + "?allowPublicKeyRetrieval=true&useSSL=true&serverTimezone=Asia/Kolkata&connectTimeout=7000&socketTimeout=10000";
                     config.setJdbcUrl(constructed);
                 } else {
                     // Fallback to local default URL
@@ -140,11 +142,12 @@ public final class DBConnection {
             if (dbUser != null && !dbUser.isBlank()) config.setUsername(dbUser);
             if (dbPass != null) config.setPassword(dbPass);
 
-            config.setMaximumPoolSize(15);
-            config.setMinimumIdle(2);
+            config.setMaximumPoolSize(10);
+            config.setMinimumIdle(1);
             config.setIdleTimeout(30000);
             config.setMaxLifetime(1800000);
-            config.setConnectionTimeout(20000);
+            config.setConnectionTimeout(8000);
+            config.setValidationTimeout(3000);
             config.setLeakDetectionThreshold(60000);
 
             HikariDataSource ds = new HikariDataSource(config);
