@@ -21,5 +21,5 @@ COPY --from=build /app/target/stitchtrack.war /usr/local/tomcat/webapps/ROOT.war
 # Expose port 8080 (fallback)
 EXPOSE 8080
 
-# Adapt Tomcat to listen on Render's dynamic $PORT (defaults to 8080 if not set)
-CMD ["sh", "-c", "sed -i \"s/port=\\\"8080\\\"/port=\\\"${PORT:-8080}\\\"/g\" /usr/local/tomcat/conf/server.xml && catalina.sh run"]
+# Adapt Tomcat to listen on Render's dynamic $PORT and disable shutdown port 8005 so Render only sees HTTP
+CMD ["sh", "-c", "sed -i 's/<Server port=\"8005\"/<Server port=\"-1\"/g' /usr/local/tomcat/conf/server.xml && sed -i \"s/port=\\\"8080\\\"/port=\\\"${PORT:-8080}\\\"/g\" /usr/local/tomcat/conf/server.xml && catalina.sh run"]
