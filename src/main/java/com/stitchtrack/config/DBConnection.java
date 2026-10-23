@@ -12,41 +12,100 @@ import org.slf4j.LoggerFactory;
 public final class DBConnection {
     private static final Logger logger = LoggerFactory.getLogger(DBConnection.class);
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/stitchtrack_java?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata";
-    private static final HikariDataSource dataSource;
+    private static volatile HikariDataSource dataSource;
+    private static final Object lock = new Object();
+    private static volatile boolean schemaBootstrapped = false;
 
     private DBConnection() {}
 
-    static {
+    private static HikariDataSource getDataSource() throws SQLException {
+        HikariDataSource ds = dataSource;
+        if (ds == null) {
+            synchronized (lock) {
+                ds = dataSource;
+                if (ds == null) {
+                    ds = createDataSource();
+                    dataSource = ds;
+                }
+            }
+        }
+        return ds;
+    }
+
+    public static Connection getConnection() throws SQLException {
+        HikariDataSource ds = getDataSource();
+        if (!schemaBootstrapped) {
+            synchronized (lock) {
+                if (!schemaBootstrapped) {
+                    autoBootstrapSchema(ds);
+                    schemaBootstrapped = true;
+                }
+            }
+        }
+        return ds.getConnection();
+    }
+
+    private static HikariDataSource createDataSource() throws SQLException {
+        String dbUrl = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             HikariConfig config = new HikariConfig();
 
             // 1. Check for full database connection strings:
             // Checks DATABASE_URL, MYSQL_URL, JDBC_DATABASE_URL, STITCHTRACK_DB_URL
-            String dbUrl = env("DATABASE_URL", "MYSQL_URL", "JDBC_DATABASE_URL", "STITCHTRACK_DB_URL");
+            dbUrl = env("DATABASE_URL", "MYSQL_URL", "JDBC_DATABASE_URL", "STITCHTRACK_DB_URL");
             String dbUser = env("STITCHTRACK_DB_USER", "MYSQLUSER", "MYSQL_USER", "DB_USER");
             String dbPass = env("STITCHTRACK_DB_PASSWORD", "MYSQLPASSWORD", "MYSQL_PASSWORD", "DB_PASSWORD");
 
             if (dbUrl != null && (dbUrl.startsWith("mysql://") || dbUrl.startsWith("mysql2://"))) {
-                // Parse standard cloud mysql:// URLs (e.g. Railway, Render, Clever Cloud)
+                // Parse standard cloud mysql:// URLs (e.g. Railway, Render, Clever Cloud, Aiven, TiDB)
                 try {
-                    URI uri = new URI(dbUrl.replace("mysql2://", "mysql://"));
-                    String host = uri.getHost();
-                    int port = (uri.getPort() > 0) ? uri.getPort() : 3306;
-                    String path = uri.getPath();
-                    String dbName = (path != null && path.length() > 1) ? path.substring(1) : "stitchtrack_java";
-                    
-                    String userInfo = uri.getUserInfo();
-                    if (userInfo != null) {
-                        String[] parts = userInfo.split(":", 2);
-                        if (dbUser == null || dbUser.isBlank()) dbUser = parts[0];
-                        if (parts.length > 1 && (dbPass == null || dbPass.isBlank())) dbPass = parts[1];
+                    String cleanUrl = dbUrl.replace("mysql2://", "").replace("mysql://", "");
+                    String query = "";
+                    int qIdx = cleanUrl.indexOf('?');
+                    if (qIdx != -1) {
+                        query = cleanUrl.substring(qIdx + 1);
+                        cleanUrl = cleanUrl.substring(0, qIdx);
                     }
 
-                    String query = uri.getQuery();
+                    String userInfo = null;
+                    int atIdx = cleanUrl.lastIndexOf('@');
+                    if (atIdx != -1) {
+                        userInfo = cleanUrl.substring(0, atIdx);
+                        cleanUrl = cleanUrl.substring(atIdx + 1);
+                    }
+
+                    if (userInfo != null) {
+                        int colonIdx = userInfo.indexOf(':');
+                        if (colonIdx != -1) {
+                            if (dbUser == null || dbUser.isBlank()) dbUser = userInfo.substring(0, colonIdx);
+                            if (dbPass == null || dbPass.isBlank()) dbPass = userInfo.substring(colonIdx + 1);
+                        } else {
+                            if (dbUser == null || dbUser.isBlank()) dbUser = userInfo;
+                        }
+                    }
+
+                    String host = cleanUrl;
+                    int port = 3306;
+                    String dbName = "stitchtrack_java";
+
+                    int slashIdx = host.indexOf('/');
+                    if (slashIdx != -1) {
+                        dbName = host.substring(slashIdx + 1);
+                        host = host.substring(0, slashIdx);
+                    }
+
+                    int portIdx = host.lastIndexOf(':');
+                    if (portIdx != -1) {
+                        try {
+                            port = Integer.parseInt(host.substring(portIdx + 1));
+                            host = host.substring(0, portIdx);
+                        } catch (NumberFormatException ignored) {}
+                    }
+
                     StringBuilder jdbcUrl = new StringBuilder("jdbc:mysql://").append(host).append(":").append(port).append("/").append(dbName);
                     jdbcUrl.append("?allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata");
-                    if (query != null && !query.isBlank()) {
+                    if (!query.isBlank()) {
                         jdbcUrl.append("&").append(query);
                     } else {
                         jdbcUrl.append("&useSSL=true");
@@ -82,29 +141,21 @@ public final class DBConnection {
             if (dbPass != null) config.setPassword(dbPass);
 
             config.setMaximumPoolSize(15);
-            config.setMinimumIdle(3);
+            config.setMinimumIdle(2);
             config.setIdleTimeout(30000);
             config.setMaxLifetime(1800000);
-            config.setConnectionTimeout(30000);
+            config.setConnectionTimeout(20000);
             config.setLeakDetectionThreshold(60000);
 
-            dataSource = new HikariDataSource(config);
+            HikariDataSource ds = new HikariDataSource(config);
             logger.info("HikariCP Database Connection Pool initialized successfully for URL: {}", config.getJdbcUrl().replaceAll("://.*@", "://***@"));
-
-            // Initialize database tables if not existing
-            autoBootstrapSchema();
-
-            // Initialize subscription tables
-            com.stitchtrack.dao.SubscriptionDAO.ensureSchema();
-
+            return ds;
         } catch (Exception e) {
             logger.error("Failed to initialize database connection pool", e);
-            throw new ExceptionInInitializerError(e);
+            String hint = (dbUrl != null) ? "Configured DB URL: " + dbUrl.replaceAll("://.*@", "://***@")
+                    : "No DATABASE_URL or STITCHTRACK_DB_URL environment variable found. On Render, add DATABASE_URL or STITCHTRACK_DB_URL in the service Environment settings.";
+            throw new SQLException("Database connection failed. " + hint + " | Details: " + e.getMessage(), e);
         }
-    }
-
-    public static Connection getConnection() throws SQLException {
-        return dataSource.getConnection();
     }
 
     private static String env(String... keys) {
@@ -117,8 +168,8 @@ public final class DBConnection {
         return null;
     }
 
-    private static void autoBootstrapSchema() {
-        try (Connection c = dataSource.getConnection(); Statement s = c.createStatement()) {
+    private static void autoBootstrapSchema(HikariDataSource ds) {
+        try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
             // Create tables if not existing
             s.execute("""
                 CREATE TABLE IF NOT EXISTS users (
@@ -255,6 +306,12 @@ public final class DBConnection {
             logger.info("Database schema verification and bootstrap completed successfully.");
         } catch (Exception e) {
             logger.warn("Database auto-bootstrap skipped or encountered error (tables may already exist): {}", e.getMessage());
+        }
+
+        try {
+            com.stitchtrack.dao.SubscriptionDAO.ensureSchema();
+        } catch (Exception e) {
+            logger.warn("Subscription schema bootstrap skipped: {}", e.getMessage());
         }
     }
 }
