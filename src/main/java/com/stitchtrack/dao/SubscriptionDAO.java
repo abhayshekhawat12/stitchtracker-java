@@ -22,8 +22,15 @@ public class SubscriptionDAO {
     // and also lazily on first DAO usage so tests work standalone.
     // ---------------------------------------------------------------
     public static void ensureSchema() {
-        try (Connection c = DBConnection.getConnection(); Statement s = c.createStatement()) {
+        try (Connection c = DBConnection.getConnection()) {
+            ensureSchema(c);
+        } catch (Exception e) {
+            System.err.println("[SubscriptionDAO] Schema bootstrap warning: " + e.getMessage());
+        }
+    }
 
+    public static void ensureSchema(Connection c) {
+        try (Statement s = c.createStatement()) {
             // free_quota_assigned column (idempotent via IF NOT EXISTS for MySQL 8+)
             try {
                 s.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS free_quota_assigned TINYINT(1) NOT NULL DEFAULT 0");

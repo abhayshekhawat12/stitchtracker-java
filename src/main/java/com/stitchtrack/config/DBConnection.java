@@ -37,8 +37,8 @@ public final class DBConnection {
         if (!schemaBootstrapped) {
             synchronized (lock) {
                 if (!schemaBootstrapped) {
-                    autoBootstrapSchema(ds);
                     schemaBootstrapped = true;
+                    autoBootstrapSchema(ds);
                 }
             }
         }
@@ -307,14 +307,14 @@ public final class DBConnection {
             try { s.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS free_quota_assigned TINYINT(1) NOT NULL DEFAULT 0"); } catch(Exception ignored){}
 
             logger.info("Database schema verification and bootstrap completed successfully.");
+
+            try {
+                com.stitchtrack.dao.SubscriptionDAO.ensureSchema(c);
+            } catch (Exception e) {
+                logger.warn("Subscription schema bootstrap skipped: {}", e.getMessage());
+            }
         } catch (Exception e) {
             logger.warn("Database auto-bootstrap skipped or encountered error (tables may already exist): {}", e.getMessage());
-        }
-
-        try {
-            com.stitchtrack.dao.SubscriptionDAO.ensureSchema();
-        } catch (Exception e) {
-            logger.warn("Subscription schema bootstrap skipped: {}", e.getMessage());
         }
     }
 }
