@@ -31,13 +31,10 @@ public class SubscriptionDAO {
 
     public static void ensureSchema(Connection c) {
         try (Statement s = c.createStatement()) {
-            // free_quota_assigned column (idempotent via IF NOT EXISTS for MySQL 8+)
+            // free_quota_assigned column (MySQL syntax: ALTER without IF NOT EXISTS)
             try {
-                s.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS free_quota_assigned TINYINT(1) NOT NULL DEFAULT 0");
-            } catch (SQLException ex) {
-                // older MySQL without IF NOT EXISTS support – ignore duplicate column error
-                if (!ex.getSQLState().startsWith("42")) throw ex;
-            }
+                s.execute("ALTER TABLE users ADD COLUMN free_quota_assigned TINYINT(1) NOT NULL DEFAULT 0");
+            } catch (SQLException ignored) {}
 
             s.execute("""
                 CREATE TABLE IF NOT EXISTS subscription_plans (
@@ -81,8 +78,8 @@ public class SubscriptionDAO {
                 )
             """);
 
-            try { s.execute("ALTER TABLE subscription_transactions ADD COLUMN IF NOT EXISTS payment_screenshot VARCHAR(500)"); } catch (Exception ignored) {}
-            try { s.execute("ALTER TABLE subscription_transactions ADD COLUMN IF NOT EXISTS utr_number VARCHAR(120)"); } catch (Exception ignored) {}
+            try { s.execute("ALTER TABLE subscription_transactions ADD COLUMN payment_screenshot VARCHAR(500)"); } catch (Exception ignored) {}
+            try { s.execute("ALTER TABLE subscription_transactions ADD COLUMN utr_number VARCHAR(120)"); } catch (Exception ignored) {}
 
         } catch (Exception e) {
             // Log but do not crash startup – tables may already exist

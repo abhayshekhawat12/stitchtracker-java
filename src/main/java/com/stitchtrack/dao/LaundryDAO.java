@@ -302,8 +302,7 @@ public class LaundryDAO {
 
     private void loadItems(Connection c, LaundryOrder o) throws SQLException {
         try (PreparedStatement p = c.prepareStatement(
-                "SELECT category, item_count, credit_rate, credits_consumed " +
-                "FROM laundry_items WHERE order_id=? ORDER BY category")) {
+                "SELECT category, item_count FROM laundry_items WHERE order_id=? ORDER BY category")) {
             p.setLong(1, o.getId());
             try (ResultSet r = p.executeQuery()) {
                 while (r.next()) o.getItems().put(r.getString("category"), r.getInt("item_count"));

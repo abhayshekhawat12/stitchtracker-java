@@ -299,12 +299,12 @@ public final class DBConnection {
                 VALUES ('Laundry Staff','STAFF-02','laundrystaff@stitchtrack.com','$2a$12$H1PlJ/Tu.hjuUrTiqS9LwOikMCgGqLkrsK8V5u2FfsrJc3MONg.b.','Laundry Room','Counter-1',9999,0,'Active','Approved','STAFF')
             """);
 
-            // Safely add credit columns to existing tables (ALTER IF NOT EXISTS – MySQL 8.0.3+)
-            try { s.execute("ALTER TABLE laundry_orders ADD COLUMN IF NOT EXISTS total_credits INT NOT NULL DEFAULT 0"); } catch(Exception ignored){}
-            try { s.execute("ALTER TABLE laundry_items ADD COLUMN IF NOT EXISTS credit_rate INT NOT NULL DEFAULT 1"); } catch(Exception ignored){}
-            try { s.execute("ALTER TABLE laundry_items ADD COLUMN IF NOT EXISTS credits_consumed INT NOT NULL DEFAULT 0"); } catch(Exception ignored){}
+            // Safely add credit columns to existing tables (Standard MySQL syntax: ALTER without IF NOT EXISTS)
+            try { s.execute("ALTER TABLE laundry_orders ADD COLUMN total_credits INT NOT NULL DEFAULT 0"); } catch(Exception ignored){}
+            try { s.execute("ALTER TABLE laundry_items ADD COLUMN credit_rate INT NOT NULL DEFAULT 1"); } catch(Exception ignored){}
+            try { s.execute("ALTER TABLE laundry_items ADD COLUMN credits_consumed INT NOT NULL DEFAULT 0"); } catch(Exception ignored){}
             // Safely add free_quota_assigned column
-            try { s.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS free_quota_assigned TINYINT(1) NOT NULL DEFAULT 0"); } catch(Exception ignored){}
+            try { s.execute("ALTER TABLE users ADD COLUMN free_quota_assigned TINYINT(1) NOT NULL DEFAULT 0"); } catch(Exception ignored){}
 
             logger.info("Database schema verification and bootstrap completed successfully.");
 
